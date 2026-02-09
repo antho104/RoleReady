@@ -37,12 +37,12 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Run tests
+      - name: Run build (format, lint, test)
         run: |
-          pytest
+          make build
 
   cdk-check:
-    needs: backend-tests          # 👈 only runs if backend-tests SUCCESS
+    needs: backend-tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -60,11 +60,20 @@ jobs:
       - name: Install deps
         run: npm ci
 
+      - name: Run infrastructure tests
+        run: npm test
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Run linting (TypeScript check)
+        run: npx tsc --noEmit
+
       - name: CDK synth
         run: npx cdk synth
 
-  deploy:
-    needs: [backend-tests, cdk-check]   # 👈 both must be green
+  deploy-alpha:
+    needs: [backend-tests, cdk-check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     defaults:
@@ -83,15 +92,97 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials (Alpha)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::954164445144:role/github-actions-deploy
+          aws-region: eu-west-1
+
+      - name: Verify AWS caller (Alpha)
+        run: |
+          echo "Deploying to ALPHA environment..."
+          aws sts get-caller-identity
+
+      - name: CDK deploy (Alpha)
+        env:
+          CDK_DEFAULT_ACCOUNT: 954164445144
+          CDK_DEFAULT_REGION: eu-west-1
+        run: npx cdk deploy --require-approval never
+
+  integration-tests-alpha:
+    needs: deploy-alpha
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure AWS Credentials (Alpha)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::954164445144:role/github-actions-deploy
+          aws-region: eu-west-1
+
+      - name: Get Alpha API URL from CloudFormation
+        id: get-api-url
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name ServiceStack \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+            --output text)
+          echo "ALPHA_API_URL=$API_URL" >> $GITHUB_ENV
+          echo "Alpha API URL: $API_URL"
+
+      - name: Run integration tests against Alpha
+        run: pytest tests/test_alpha_integration.py -v
+
+  deploy-prod:
+    needs: [deploy-alpha, integration-tests-alpha]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Configure AWS Credentials (Prod)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::839185960743:role/github-actions-deploy
           aws-region: eu-west-1
 
-      - name: Verify AWS caller
-        run: aws sts get-caller-identity
+      - name: Verify AWS caller (Prod)
+        run: |
+          echo "Deploying to PRODUCTION environment..."
+          aws sts get-caller-identity
 
-      - name: CDK deploy
+      - name: CDK deploy (Prod)
+        env:
+          CDK_DEFAULT_ACCOUNT: 839185960743
+          CDK_DEFAULT_REGION: eu-west-1
         run: npx cdk deploy --require-approval never
-

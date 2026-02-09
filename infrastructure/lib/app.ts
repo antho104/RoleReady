@@ -3,18 +3,16 @@ import * as cdk from 'aws-cdk-lib/core';
 import * as stacks from '../lib/stacks/stacks';
 
 const app = new cdk.App();
-new stacks.ServiceStack(app, 'ServiceStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+// Get account and region from environment or CDK context
+const account = process.env.CDK_DEFAULT_ACCOUNT || app.node.tryGetContext('account');
+const region = process.env.CDK_DEFAULT_REGION || app.node.tryGetContext('region') || 'eu-west-1';
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+// Optional: Get notification email from context or environment
+const notificationEmail = app.node.tryGetContext('notificationEmail') || process.env.ALARM_NOTIFICATION_EMAIL;
 
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+const serviceStack = new stacks.ServiceStack(app, 'ServiceStack', {
+  env: { account, region },
+  enableMonitoring: true,
+  notificationEmail: notificationEmail,
 });
