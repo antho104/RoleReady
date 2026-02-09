@@ -4,12 +4,16 @@ on:
   push:
     branches: [ main ]
     paths:
+      - 'package.json'
+      - 'package-lock.json'
       - 'infrastructure/**'
       - 'backend/**'
       - '.github/workflows/**'
   pull_request:
     branches: [ main ]
     paths:
+      - 'package.json'
+      - 'package-lock.json'
       - 'infrastructure/**'
       - 'backend/**'
 
@@ -40,6 +44,20 @@ jobs:
       - name: Run build (format, lint, test)
         run: |
           make build
+
+      - name: Run Trivy vulnerability scanner (All Dependencies)
+        # Scans backend + infrastructure dependencies:
+        # - Backend Python (backend/requirements.txt)
+        # - Infrastructure npm (package-lock.json)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+        continue-on-error: false
 
   cdk-check:
     needs: backend-tests
@@ -140,9 +158,9 @@ jobs:
         run: |
           API_URL=$(aws cloudformation describe-stacks \
             --stack-name ServiceStack \
-            --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' \
+            --query "Stacks[0].Outputs[?OutputKey==\`ApiUrl\`].OutputValue" \
             --output text)
-          echo "ALPHA_API_URL=$API_URL" >> $GITHUB_ENV
+          echo "ALPHA_API_URL=$API_URL" >> "$GITHUB_ENV"
           echo "Alpha API URL: $API_URL"
 
       - name: Run integration tests against Alpha

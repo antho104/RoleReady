@@ -4,6 +4,8 @@ on:
   push:
     branches: [ main ]
     paths:
+      - 'package.json'
+      - 'package-lock.json'
       - 'frontend/**'
       - '.github/workflows/**'
 
@@ -22,9 +24,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
-      - name: Install frontend deps
-        working-directory: frontend
+      - name: Install dependencies (root + workspaces)
         run: npm ci
 
       - name: Run linting
@@ -34,6 +36,20 @@ jobs:
       - name: Type check
         working-directory: frontend
         run: npx tsc -b --noEmit
+
+      - name: Run Trivy vulnerability scanner (npm dependencies only)
+        # Only scans frontend npm dependencies from package-lock.json
+        # Skips backend/infrastructure to avoid blocking frontend on unrelated issues
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          scanners: 'vuln'
+          skip-dirs: 'backend,infrastructure'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
 
       - name: Build frontend
         working-directory: frontend
@@ -97,9 +113,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
-      - name: Install frontend deps
-        working-directory: frontend
+      - name: Install dependencies (root + workspaces)
         run: npm ci
 
       - name: Run linting
