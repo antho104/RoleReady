@@ -269,7 +269,7 @@ describe('ServiceStack CDK tests', () => {
     const template = synthTemplate('alpha');
 
     template.hasResourceProperties('AWS::ApiGateway::DomainName', {
-      DomainName: 'alpha.api.apaps.people.aws.dev',
+      DomainName: 'api.alpha.apaps.people.aws.dev',
       EndpointConfiguration: {
         Types: ['REGIONAL'],
       },

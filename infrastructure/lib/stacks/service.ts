@@ -110,7 +110,7 @@ export class ServiceStack extends cdk.Stack {
       });
 
       // API domain and certificate (same region as API Gateway)
-      apiDomain = `${environment}.api.${rootDomain}`;
+      apiDomain = `api.${environment}.${rootDomain}`; // api.alpha.apaps.people.aws.dev
       apiCertificate = new acm.Certificate(this, 'ApiCertificate', {
         domainName: apiDomain,
         validation: acm.CertificateValidation.fromDns(hostedZone),
@@ -344,7 +344,7 @@ export class ServiceStack extends cdk.Stack {
     // Route 53 A Record for API Gateway
     new route53.ARecord(this, 'ApiAliasRecord', {
       zone: hostedZone,
-      recordName: isProduction ? 'api' : `${environment}.api`,
+      recordName: 'api',
       target: route53.RecordTarget.fromAlias(
         new route53Targets.ApiGatewayDomain(customDomain)
       ),
