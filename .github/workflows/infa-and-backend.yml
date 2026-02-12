@@ -87,6 +87,12 @@ jobs:
       - name: Run linting (TypeScript check)
         run: npx tsc --noEmit
 
+      - name: Configure AWS Credentials for CDK synth
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::431081169070:role/github-actions-deploy
+          aws-region: eu-west-1
+
       - name: CDK synth
         run: npx cdk synth
 
