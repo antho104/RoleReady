@@ -233,7 +233,7 @@ export class ServiceStack extends cdk.Stack {
     // Route 53 A Record for CloudFront
     new route53.ARecord(this, 'WebsiteAliasRecord', {
       zone: hostedZone,
-      recordName: isProduction ? undefined : environment, // Root for prod, subdomain for alpha
+      recordName: undefined, // Apex of the zone (root for prod, apex for alpha subdomain)
       target: route53.RecordTarget.fromAlias(
         new route53Targets.CloudFrontTarget(distribution)
       ),
