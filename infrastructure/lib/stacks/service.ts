@@ -27,6 +27,25 @@ export class ServiceStack extends cdk.Stack {
     const enableMonitoring = props?.enableMonitoring ?? true;
     const environment = props?.environment ?? 'prod';
 
+    // Create Supernova IAM role for DNS delegation (prod only)
+    if (environment === 'prod') {
+      const supernovaRole = new iam.Role(this, 'SupernovaRole', {
+        roleName: 'Nova-DO-NOT-DELETE',
+        description: 'IAM role for Supernova DNS delegation - DO NOT DELETE MANUALLY',
+        assumedBy: new iam.ServicePrincipal('nova.aws.internal'),
+        maxSessionDuration: cdk.Duration.hours(12),
+      });
+
+      supernovaRole.addManagedPolicy(
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonRoute53FullAccess')
+      );
+
+      new cdk.CfnOutput(this, 'SupernovaRoleArn', {
+        value: supernovaRole.roleArn,
+        description: 'Use this ARN when submitting Supernova delegation request at https://supernova.amazon.dev/',
+      });
+    }
+
     const userPool = new cognito.UserPool(this, 'InterviewQuestionBankUserPool', {
       userPoolName: 'interview-question-bank-users',
       selfSignUpEnabled: false,
