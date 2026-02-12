@@ -8,6 +8,9 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as cloudwatch_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
@@ -18,6 +21,7 @@ export interface ServiceStackProps extends cdk.StackProps {
   enableMonitoring?: boolean;
   notificationEmail?: string;
   environment?: 'alpha' | 'prod';
+  domainName?: string; // Root domain (e.g., apaps.people.aws.dev)
 }
 
 export class ServiceStack extends cdk.Stack {
@@ -26,6 +30,8 @@ export class ServiceStack extends cdk.Stack {
     
     const enableMonitoring = props?.enableMonitoring ?? true;
     const environment = props?.environment ?? 'prod';
+    const rootDomain = props?.domainName || 'apaps.people.aws.dev';
+    const isProduction = environment === 'prod';
 
     // Create Supernova IAM role for DNS delegation (prod only)
     if (environment === 'prod') {
@@ -45,6 +51,85 @@ export class ServiceStack extends cdk.Stack {
         description: 'Use this ARN when submitting Supernova delegation request at https://supernova.amazon.dev/',
       });
     }
+
+    // ============================================
+    // DNS and Certificate Setup
+    // ============================================
+    let hostedZone: route53.IHostedZone;
+    let websiteDomain: string;
+    let certificate: acm.ICertificate;
+    let apiDomain: string;
+    let apiCertificate: acm.ICertificate;
+
+    if (isProduction) {
+      // Production: Use root domain (apaps.people.aws.dev)
+      websiteDomain = rootDomain;
+
+      // Lookup the Supernova-delegated hosted zone
+      hostedZone = route53.HostedZone.fromLookup(this, 'RootHostedZone', {
+        domainName: rootDomain,
+      });
+
+      // Certificate for CloudFront MUST be in us-east-1
+      certificate = new acm.DnsValidatedCertificate(this, 'WebsiteCertificate', {
+        domainName: websiteDomain,
+        hostedZone: hostedZone,
+        region: 'us-east-1', // Required for CloudFront
+      });
+
+      // API domain and certificate (same region as API Gateway)
+      apiDomain = `api.${rootDomain}`;
+      apiCertificate = new acm.Certificate(this, 'ApiCertificate', {
+        domainName: apiDomain,
+        validation: acm.CertificateValidation.fromDns(hostedZone),
+      });
+
+    } else {
+      // Alpha: Use subdomain (alpha.apaps.people.aws.dev)
+      websiteDomain = `${environment}.${rootDomain}`;
+
+      // Lookup parent hosted zone
+      const parentZone = route53.HostedZone.fromLookup(this, 'ParentHostedZone', {
+        domainName: rootDomain,
+      });
+
+      // Create subdomain hosted zone for Alpha
+      hostedZone = new route53.PublicHostedZone(this, 'SubdomainHostedZone', {
+        zoneName: websiteDomain,
+      });
+
+      // Delegate subdomain from parent zone
+      new route53.NsRecord(this, 'SubdomainDelegation', {
+        zone: parentZone,
+        recordName: environment,
+        values: hostedZone.hostedZoneNameServers!,
+        ttl: cdk.Duration.hours(24),
+      });
+
+      // Certificate for CloudFront MUST be in us-east-1
+      certificate = new acm.DnsValidatedCertificate(this, 'WebsiteCertificate', {
+        domainName: websiteDomain,
+        hostedZone: hostedZone,
+        region: 'us-east-1', // Required for CloudFront
+      });
+
+      // API domain and certificate (same region as API Gateway)
+      apiDomain = `${environment}.api.${rootDomain}`;
+      apiCertificate = new acm.Certificate(this, 'ApiCertificate', {
+        domainName: apiDomain,
+        validation: acm.CertificateValidation.fromDns(hostedZone),
+      });
+    }
+
+    new cdk.CfnOutput(this, 'WebsiteDomain', {
+      value: websiteDomain,
+      description: 'Custom domain for the website',
+    });
+
+    new cdk.CfnOutput(this, 'ApiDomain', {
+      value: apiDomain,
+      description: 'Custom domain for the API',
+    });
 
     const userPool = new cognito.UserPool(this, 'InterviewQuestionBankUserPool', {
       userPoolName: 'interview-question-bank-users',
@@ -107,6 +192,8 @@ export class ServiceStack extends cdk.Stack {
     frontendS3.grantRead(originAccessIdentity);
 
     const distribution = new cloudfront.Distribution(this, 'FrontendDistribution', {
+      domainNames: [websiteDomain],
+      certificate: certificate,
       defaultBehavior: {
         origin: new origins.S3Origin(frontendS3, {
           originAccessIdentity: originAccessIdentity,
@@ -146,6 +233,15 @@ export class ServiceStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'CloudFrontDomainName', {
       value: distribution.distributionDomainName,
       description: 'CloudFront Domain Name',
+    });
+
+    // Route 53 A Record for CloudFront
+    new route53.ARecord(this, 'WebsiteAliasRecord', {
+      zone: hostedZone,
+      recordName: isProduction ? undefined : environment, // Root for prod, subdomain for alpha
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.CloudFrontTarget(distribution)
+      ),
     });
 
     // Dynamo DB Table
@@ -234,6 +330,33 @@ export class ServiceStack extends cdk.Stack {
         ],
         allowCredentials: true,
       },
+    });
+
+    // API Gateway Custom Domain
+    const customDomain = new apigw.DomainName(this, 'ApiCustomDomain', {
+      domainName: apiDomain,
+      certificate: apiCertificate,
+      endpointType: apigw.EndpointType.REGIONAL,
+      securityPolicy: apigw.SecurityPolicy.TLS_1_2,
+    });
+
+    // Base path mapping
+    customDomain.addBasePathMapping(api, {
+      basePath: '',
+    });
+
+    // Route 53 A Record for API Gateway
+    new route53.ARecord(this, 'ApiAliasRecord', {
+      zone: hostedZone,
+      recordName: isProduction ? 'api' : `${environment}.api`,
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.ApiGatewayDomain(customDomain)
+      ),
+    });
+
+    new cdk.CfnOutput(this, 'ApiCustomDomainName', {
+      value: `https://${apiDomain}`,
+      description: 'Custom domain URL for the API',
     });
 
     // Only create the testing endpoint in Alpha environment
