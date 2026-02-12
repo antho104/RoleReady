@@ -17,6 +17,15 @@
     ]
   },
   "context": {
+    "domainName": "apaps.people.aws.dev",
+    "accounts": {
+      "prod": "431081169070",
+      "alpha": "265870078323"
+    },
+    "regions": {
+      "prod": "eu-west-1",
+      "alpha": "eu-west-1"
+    },
     "@aws-cdk/aws-signer:signingProfileNamePassedToCfn": true,
     "@aws-cdk/aws-ecs-patterns:secGroupsDisablesImplicitOpenListener": true,
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
