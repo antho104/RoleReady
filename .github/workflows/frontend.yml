@@ -51,15 +51,37 @@ jobs:
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
 
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
       - name: Configure AWS Credentials (Alpha)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::265870078323:role/github-actions-deploy
           aws-region: eu-west-1
+
+      - name: Get Alpha stack outputs
+        id: alpha-outputs
+        run: |
+          STACK_NAME=ServiceStack
+
+          USER_POOL_ID=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" \
+            --output text)
+
+          USER_POOL_CLIENT_ID=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='UserPoolClientId'].OutputValue" \
+            --output text)
+
+          echo "user_pool_id=$USER_POOL_ID" >> "$GITHUB_OUTPUT"
+          echo "user_pool_client_id=$USER_POOL_CLIENT_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: https://api.alpha.apaps.people.aws.dev/
+          VITE_USER_POOL_ID: ${{ steps.alpha-outputs.outputs.user_pool_id }}
+          VITE_USER_POOL_CLIENT_ID: ${{ steps.alpha-outputs.outputs.user_pool_client_id }}
+        run: npm run build
 
       - name: Check frontend infra stack exists (Alpha)
         id: check_stack
@@ -126,15 +148,37 @@ jobs:
         working-directory: frontend
         run: npx tsc -b --noEmit
 
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
       - name: Configure AWS Credentials (Prod)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::431081169070:role/github-actions-deploy
           aws-region: eu-west-1
+
+      - name: Get Prod stack outputs
+        id: prod-outputs
+        run: |
+          STACK_NAME=ServiceStack
+
+          USER_POOL_ID=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" \
+            --output text)
+
+          USER_POOL_CLIENT_ID=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='UserPoolClientId'].OutputValue" \
+            --output text)
+
+          echo "user_pool_id=$USER_POOL_ID" >> "$GITHUB_OUTPUT"
+          echo "user_pool_client_id=$USER_POOL_CLIENT_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: https://api.apaps.people.aws.dev/
+          VITE_USER_POOL_ID: ${{ steps.prod-outputs.outputs.user_pool_id }}
+          VITE_USER_POOL_CLIENT_ID: ${{ steps.prod-outputs.outputs.user_pool_client_id }}
+        run: npm run build
 
       - name: Check frontend infra stack exists (Prod)
         id: check_stack
