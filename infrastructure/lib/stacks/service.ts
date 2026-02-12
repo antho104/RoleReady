@@ -93,7 +93,9 @@ export class ServiceStack extends cdk.Stack {
       hostedZone = new route53.PublicHostedZone(this, 'SubdomainHostedZone', {
         zoneName: websiteDomain,
         comment: `Subdomain zone for ${environment} environment`,
+        caaAmazon: true,
       });
+      hostedZone.applyRemovalPolicy(cdk.RemovalPolicy.RETAIN);
 
       // Output NS servers for manual delegation in prod
       new cdk.CfnOutput(this, 'SubdomainNameServers', {
