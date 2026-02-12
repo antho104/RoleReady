@@ -1,1 +1,6 @@
-{}
+{
+  "hosted-zone:account=431081169070:domainName=apaps.people.aws.dev:region=eu-west-1": {
+    "Id": "/hostedzone/Z0561443CW54PKXYTZDJ",
+    "Name": "apaps.people.aws.dev."
+  }
+}

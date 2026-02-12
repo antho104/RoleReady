@@ -65,10 +65,9 @@ export class ServiceStack extends cdk.Stack {
       // Production: Use root domain (apaps.people.aws.dev)
       websiteDomain = rootDomain;
 
-      // Create root hosted zone for Supernova-delegated domain
-      hostedZone = new route53.PublicHostedZone(this, 'RootHostedZone', {
-        zoneName: rootDomain,
-        comment: 'Root domain for RoleReady (Supernova-delegated)',
+      // Lookup the Supernova-created hosted zone (don't create a new one!)
+      hostedZone = route53.HostedZone.fromLookup(this, 'RootHostedZone', {
+        domainName: rootDomain,
       });
 
       // Certificate for CloudFront MUST be in us-east-1
