@@ -65,9 +65,10 @@ export class ServiceStack extends cdk.Stack {
       // Production: Use root domain (apaps.people.aws.dev)
       websiteDomain = rootDomain;
 
-      // Lookup the Supernova-delegated hosted zone
-      hostedZone = route53.HostedZone.fromLookup(this, 'RootHostedZone', {
-        domainName: rootDomain,
+      // Create root hosted zone for Supernova-delegated domain
+      hostedZone = new route53.PublicHostedZone(this, 'RootHostedZone', {
+        zoneName: rootDomain,
+        comment: 'Root domain for RoleReady (Supernova-delegated)',
       });
 
       // Certificate for CloudFront MUST be in us-east-1
@@ -88,22 +89,17 @@ export class ServiceStack extends cdk.Stack {
       // Alpha: Use subdomain (alpha.apaps.people.aws.dev)
       websiteDomain = `${environment}.${rootDomain}`;
 
-      // Lookup parent hosted zone
-      const parentZone = route53.HostedZone.fromLookup(this, 'ParentHostedZone', {
-        domainName: rootDomain,
-      });
-
       // Create subdomain hosted zone for Alpha
+      // Note: NS delegation from parent zone must be done manually in prod account
       hostedZone = new route53.PublicHostedZone(this, 'SubdomainHostedZone', {
         zoneName: websiteDomain,
+        comment: `Subdomain zone for ${environment} environment`,
       });
 
-      // Delegate subdomain from parent zone
-      new route53.NsRecord(this, 'SubdomainDelegation', {
-        zone: parentZone,
-        recordName: environment,
-        values: hostedZone.hostedZoneNameServers!,
-        ttl: cdk.Duration.hours(24),
+      // Output NS servers for manual delegation in prod
+      new cdk.CfnOutput(this, 'SubdomainNameServers', {
+        value: cdk.Fn.join(', ', hostedZone.hostedZoneNameServers || []),
+        description: `Add these NS records to ${rootDomain} in prod account for subdomain delegation`,
       });
 
       // Certificate for CloudFront MUST be in us-east-1

@@ -319,13 +319,11 @@ describe('ServiceStack CDK tests', () => {
     });
   });
 
-  test('Alpha environment creates NS delegation record', () => {
+  test('Alpha environment outputs NS servers for delegation', () => {
     const template = synthTemplate('alpha');
 
-    template.hasResourceProperties('AWS::Route53::RecordSet', {
-      Type: 'NS',
-      Name: 'alpha.apaps.people.aws.dev.',
-    });
+    const outputs = template.findOutputs('*');
+    expect(outputs).toHaveProperty('SubdomainNameServers');
   });
 
   test('Production creates Supernova IAM role', () => {
