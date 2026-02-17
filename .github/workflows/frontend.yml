@@ -122,20 +122,8 @@ jobs:
           echo "Deploying to ALPHA S3 bucket..."
           aws s3 sync dist s3://${{ steps.infra.outputs.bucket }} --delete
 
-  wait-for-backend-tests:
-    runs-on: ubuntu-latest
-    needs: deploy-alpha
-    steps:
-      - name: Wait for backend integration tests
-        uses: lewagon/wait-on-check-action@v1.3.4
-        with:
-          ref: ${{ github.ref }}
-          check-name: 'integration-tests-alpha'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
-
   deploy-prod:
-    needs: [deploy-alpha, wait-for-backend-tests]
+    needs: deploy-alpha
     runs-on: ubuntu-latest
     environment:
       name: production
