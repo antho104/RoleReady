@@ -182,6 +182,7 @@ jobs:
         working-directory: infrastructure
     environment:
       name: production
+      url: https://api.apaps.people.aws.dev
 
     steps:
       - name: Checkout repo
