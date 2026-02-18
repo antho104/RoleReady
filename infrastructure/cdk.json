@@ -18,6 +18,7 @@
   },
   "context": {
     "domainName": "apaps.people.aws.dev",
+    "notificationEmail": "apaps@amazon.co.uk",
     "accounts": {
       "prod": "431081169070",
       "alpha": "265870078323"
