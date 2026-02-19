@@ -19,11 +19,6 @@ graph LR
     D --> G[Deploy to Alpha & Prod]
     E --> F
     E --> G
-
-    style A fill:#e3f2fd
-    style B fill:#fff9c4
-    style C fill:#e1f5fe
-    style D fill:#f3e5f5
 ```
 
 ---
@@ -39,12 +34,6 @@ graph LR
     C -->|Approved| D[4. Deploy Production]
 
     A -->|Fail| X[Stop]
-
-    style A fill:#e8eaf6
-    style B fill:#fff8e1
-    style C fill:#fff9c4
-    style D fill:#e8f5e9
-    style X fill:#ffebee
 ```
 
 ### Stage Details
@@ -73,13 +62,6 @@ graph LR
 
     A -->|Fail| X[Stop]
     C -->|Fail| X
-
-    style A fill:#e8eaf6
-    style B fill:#fff8e1
-    style C fill:#e1f5fe
-    style D fill:#fff9c4
-    style E fill:#e8f5e9
-    style X fill:#ffebee
 ```
 
 ### Stage Details
@@ -120,16 +102,6 @@ graph TD
     D -->|Yes| E{Manual Approval?}
     E -->|No| X4[Blocked]
     E -->|Yes| F[Deploy to Production]
-
-    style B fill:#fff9c4
-    style C fill:#fff9c4
-    style D fill:#fff9c4
-    style E fill:#fff9c4
-    style F fill:#c8e6c9
-    style X1 fill:#ffcdd2
-    style X2 fill:#ffcdd2
-    style X3 fill:#ffcdd2
-    style X4 fill:#ffcdd2
 ```
 
 ### Security Checks (Every Build)
