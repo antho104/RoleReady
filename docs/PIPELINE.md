@@ -18,9 +18,12 @@ graph TB
         A[Push to Main<br/>frontend/** changes] --> B[Checkout Code]
         B --> C[Setup Node.js 20]
         C --> D[Install Dependencies]
-        D --> E[Run ESLint]
-        E --> F[TypeScript Type Check]
-        F --> G[Trivy Security Scan<br/>npm dependencies]
+
+        subgraph "Quality Checks (Run Once)"
+            D --> E[Run ESLint]
+            E --> F[TypeScript Type Check]
+            F --> G[Trivy Security Scan<br/>npm dependencies]
+        end
 
         G -->|Pass| H[Deploy to Alpha Environment]
         G -->|Fail| X1[❌ Build Failed]
@@ -28,7 +31,7 @@ graph TB
         subgraph "Alpha Deployment"
             H --> H1[Configure AWS Credentials<br/>Alpha Account]
             H1 --> H2[Get CloudFormation Outputs<br/>UserPool ID & Client ID]
-            H2 --> H3[Build React App<br/>VITE_API_URL=alpha.apaps.people.aws.dev]
+            H2 --> H3[Build React App<br/>with Alpha config]
             H3 --> H4[Check Stack Exists]
             H4 -->|Exists| H5[Get S3 Bucket Name]
             H5 --> H6[Upload to S3<br/>aws s3 sync dist/]
@@ -41,10 +44,9 @@ graph TB
         I -->|Rejected| X2[❌ Deployment Cancelled]
 
         subgraph "Production Deployment"
-            J --> J1[Re-run Lint & Type Check]
-            J1 --> J2[Configure AWS Credentials<br/>Prod Account]
+            J --> J2[Configure AWS Credentials<br/>Prod Account]
             J2 --> J3[Get CloudFormation Outputs<br/>UserPool ID & Client ID]
-            J3 --> J4[Build React App<br/>VITE_API_URL=apaps.people.aws.dev]
+            J3 --> J4[Build React App<br/>with Production config]
             J4 --> J5[Check Stack Exists]
             J5 -->|Exists| J6[Get S3 Bucket Name]
             J6 --> J7[Upload to S3<br/>Production Bucket]
@@ -194,11 +196,12 @@ graph LR
 ## Pipeline Stages Explained
 
 ### 🔵 Frontend Pipeline
-1. **Code Quality** - ESLint + TypeScript checks
-2. **Security** - Trivy vulnerability scanning (npm only)
-3. **Alpha Deploy** - Build with alpha configs → Deploy to S3
-4. **Manual Gate** - GitHub Environment protection
-5. **Prod Deploy** - Build with prod configs → Deploy to S3
+1. **Quality Checks** (runs once) - ESLint + TypeScript + Trivy vulnerability scanning
+2. **Alpha Deploy** - Build with alpha configs → Deploy to S3
+3. **Manual Gate** - GitHub Environment protection
+4. **Prod Deploy** - Build with production configs → Deploy to S3 (no duplicate checks!)
+
+**⚡ Performance Optimization**: Quality checks run once and gate both deployments, saving ~2 minutes per deployment!
 
 ### 🟢 Backend & Infrastructure Pipeline
 1. **Backend Tests** - Python formatting, linting, unit tests

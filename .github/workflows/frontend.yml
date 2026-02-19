@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy-alpha:
+  quality-checks:
     runs-on: ubuntu-latest
 
     steps:
@@ -50,6 +50,22 @@ jobs:
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
+
+  deploy-alpha:
+    needs: quality-checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies (root + workspaces)
+        run: npm ci
 
       - name: Configure AWS Credentials (Alpha)
         uses: aws-actions/configure-aws-credentials@v4
@@ -123,7 +139,7 @@ jobs:
           aws s3 sync dist s3://${{ steps.infra.outputs.bucket }} --delete
 
   deploy-prod:
-    needs: deploy-alpha
+    needs: [quality-checks, deploy-alpha]
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -140,14 +156,6 @@ jobs:
 
       - name: Install dependencies (root + workspaces)
         run: npm ci
-
-      - name: Run linting
-        working-directory: frontend
-        run: npm run lint
-
-      - name: Type check
-        working-directory: frontend
-        run: npx tsc -b --noEmit
 
       - name: Configure AWS Credentials (Prod)
         uses: aws-actions/configure-aws-credentials@v4
