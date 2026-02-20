@@ -18,35 +18,43 @@
 ## End Users
 ### _"As an end user..."_
 
-#### Authentication & Access
-* I want to **securely create an account** with email and password so that I can access the interview question bank while protecting internal content.
-* I want to **log in with my credentials** so that I can access the interview question bank and practice questions.
-* I want to **change my password** from my account settings so that I can maintain account security.
-* I want to **securely access the interview question bank** so that internal interview content is protected from unauthorized access.
+#### Story 1: Secure Access to Question Bank
+**I want to** securely authenticate and access the interview question bank **so that** I can prepare for interviews while keeping content protected.
 
-#### Question Discovery
-* I want to **browse interview questions by category** so that I can quickly find questions relevant to a specific role or skill (e.g., AWS Fundamentals, System Design, Security).
-* I want to **search for interview questions using keywords** so that I can efficiently locate specific questions by text, category, or competency.
-* I want to **filter questions by difficulty level** (Easy, Medium, Hard) so that I can tailor my practice to my skill level and interview preparation needs.
-* I want to **view interview questions in a clear and consistent format** so that they are easy to read and understand.
-* I want to **see the number of filtered results** so that I understand how many questions match my search criteria.
+**Acceptance Criteria:**
+- User can sign up with email and password (min 8 chars, complexity requirements)
+- User can log in and receive JWT token for authenticated access
+- User can change password from account settings
+- Unauthenticated users are denied access to questions (401 response)
+- Session remains secure with HTTPS enforcement
 
-#### Practice Mode & AI Feedback
-* I want to **practice answering interview questions** in a safe environment so that I can prepare without pressure before real interviews.
-* I want to **submit my answers for AI evaluation** so that I can receive instant, objective feedback on my performance.
-* I want to **receive a numerical score (0-100)** for my answer so that I can quantify my understanding.
-* I want to **see what I did well** (strengths) so that I can build confidence in my knowledge areas.
-* I want to **understand what needs improvement** so that I can focus my study efforts effectively.
-* I want to **receive actionable suggestions** for improvement so that I know how to get better.
-* I want to **get encouraging feedback from Marcus** (AI Coach) so that I stay motivated during preparation.
-* I want to **retry answering the same question** after receiving feedback so that I can improve my response based on suggestions.
-* I want to **optionally view reference answers** after attempting a question so that I can compare my approach with recommended solutions.
+---
 
-#### User Experience
-* I want the **application to work on desktop, tablet, and mobile** so that I can practice anywhere, anytime.
-* I want to **see loading indicators** when content is being fetched so that I know the system is working.
-* I want to **see helpful error messages** when something goes wrong so that I understand what happened and can take appropriate action.
-* I want a **responsive and fast interface** so that I can focus on learning rather than waiting for pages to load.
+#### Story 2: Find Relevant Questions
+**I want to** search and filter interview questions by category and difficulty **so that** I can practice topics relevant to my target role and skill level.
+
+**Acceptance Criteria:**
+- Questions display in browsable cards with text, category, and difficulty
+- Search box filters questions by keyword (question text, category, competency)
+- Filter dropdown for category (AWS, System Design, Security, etc.)
+- Filter dropdown for difficulty (Easy, Medium, Hard)
+- Multiple filters work together (AND logic)
+- Results count shows "X of Y questions"
+- Filters work in real-time without page reload
+
+---
+
+#### Story 3: Practice with AI Feedback
+**I want to** submit my answers and receive instant AI-powered evaluation **so that** I can understand my strengths, improve weaknesses, and build confidence.
+
+**Acceptance Criteria:**
+- User can type/paste answer in multi-line text area
+- "Get AI Feedback" button submits answer to Marcus (AWS Bedrock)
+- Loading state shows "Marcus is evaluating..." while processing
+- Evaluation returns within 10 seconds
+- Feedback displays: score (0-100), correctness indicator, strengths list, improvements list, suggestions list, personal comment
+- User can click "Try Again" to clear and resubmit a new answer
+- Optional reference answer available (expandable, hidden by default)
 
 ---
 
@@ -54,141 +62,148 @@
 ## Developers
 ### _"As a developer..."_
 
-#### Security & Authentication
-* I want to **implement AWS Cognito authentication** so that user identities are managed securely and reliably.
-* I want to **validate JWT tokens on every API request** so that unauthorized users cannot access protected resources.
-* I want to **enforce HTTPS for all traffic** so that data in transit is encrypted and secure.
-* I want to **implement role-based access control (RBAC)** so that users can only perform actions permitted by their role.
-* I want to **validate all user input on the server side** so that invalid or malicious data cannot be stored in the system.
+#### Story 1: Secure Backend API
+**I want to** implement secure authentication and authorization with AWS Cognito **so that** only authorized users can access protected resources and data.
 
-#### API & Backend
-* I want to **structure Lambda functions modularly** so that code is maintainable and testable.
-* I want to **handle errors gracefully** so that the system remains stable and provides meaningful feedback to users.
-* I want to **implement proper CORS configuration** so that the frontend can communicate with the API securely.
-* I want to **use least-privilege IAM roles** so that each Lambda function has only the permissions it needs.
-* I want to **integrate with AWS Bedrock** so that I can leverage advanced AI models for answer evaluation.
-* I want to **parse and validate AI responses** so that evaluation feedback is always in the expected format.
+**Acceptance Criteria:**
+- Cognito user pool configured with password policies
+- API Gateway validates JWT tokens on all requests
+- Unauthenticated requests return 401
+- Lambda functions use least-privilege IAM roles
+- All traffic enforced over HTTPS
+- Server-side input validation on all endpoints
+- CORS configured properly for frontend domain
 
-#### AI Evaluation Implementation (Marcus)
-* I want to **design effective evaluation prompts** so that AI feedback is accurate, constructive, and aligned with interview standards.
-* I want to **structure AI responses as JSON** so that feedback can be easily parsed and displayed in the UI.
-* I want to **tailor AI evaluation to competency types** (Leadership Principles, System Design, Technical Depth) so that feedback is contextually relevant.
-* I want to **balance positive reinforcement with improvement areas** in AI prompts so that feedback is encouraging yet actionable.
-* I want to **handle AI evaluation failures gracefully** so that users receive helpful error messages when the service is unavailable.
-* I want to **validate AI response format** before sending to frontend so that malformed responses don't break the UI.
-* I want to **log AI evaluation metrics** (latency, token usage, error rates) so that I can monitor and optimize the service.
-* I want to **set timeouts for AI calls** so that slow responses don't degrade user experience.
-* I want to **provide clear user feedback during evaluation** ("Marcus is evaluating...") so that users understand processing is happening.
+---
 
-#### Data Management
-* I want to **use DynamoDB for question storage** so that data scales efficiently and is highly available.
-* I want to **handle DynamoDB pagination** so that large question sets are retrieved efficiently.
-* I want to **convert DynamoDB types properly** (e.g., sets to arrays) so that frontend receives clean JSON data.
+#### Story 2: AI-Powered Answer Evaluation
+**I want to** integrate AWS Bedrock for answer evaluation **so that** candidates receive instant, intelligent feedback on their interview answers.
 
-#### Observability & Monitoring
-* I want to **log key system actions** (such as question retrieval, answer evaluation) so that issues can be investigated and audited if necessary.
-* I want to **use structured JSON logging** so that logs are easily searchable and parsable in CloudWatch.
-* I want to **include request IDs in logs** so that I can trace requests across distributed components.
-* I want to **log errors with context** (error type, stack trace, request details) so that debugging is efficient.
-* I want to **monitor Lambda metrics** (duration, errors, throttles) so that I can identify performance issues.
+**Acceptance Criteria:**
+- Lambda function invokes Bedrock Claude 3.7 Sonnet model
+- Evaluation prompt tailored to competency type (LP, System Design, Technical)
+- AI response parsed and validated as JSON
+- Response includes: score, correctness, strengths, improvements, suggestions, comment
+- Evaluation completes in <10 seconds
+- Graceful error handling if AI service unavailable
+- Evaluation metrics logged (latency, errors)
 
-#### Deployment & Infrastructure
-* I want to **define infrastructure as code** (AWS CDK) so that environments are consistent and reproducible.
-* I want to **support multiple environments** (Alpha, Production) so that changes can be tested before reaching users.
-* I want to **automate deployments via CI/CD** (GitHub Actions) so that releases are reliable and repeatable.
-* I want to **run security scans** (Trivy) in the pipeline so that vulnerabilities are caught before deployment.
-* I want to **require manual approval for production deployments** so that changes are reviewed before going live.
+---
 
-#### Code Quality
-* I want to **write unit tests for Lambda functions** so that I can catch bugs early and refactor safely.
-* I want to **use linting and formatting tools** (ESLint, Black, Flake8) so that code follows consistent standards.
-* I want to **structure the application modularly** so that it can be maintained and extended in the future.
-* I want to **document code and APIs** so that other developers can understand and contribute to the system.
+#### Story 3: Scalable Data Layer
+**I want to** use DynamoDB for question storage **so that** the system scales efficiently and handles large question sets reliably.
 
-### _Acceptance Criteria_
-* **Authentication:**
-  * If a user is not authenticated, when they try to access the question bank, then they receive a 401 Unauthorized response.
-  * If a JWT token is invalid or expired, when they make an API request, then they are denied access.
-* **AI Evaluation:**
-  * If a user submits an answer, when Marcus evaluates it, then they receive a structured response within 10 seconds.
-  * If the AI response is malformed, when parsing fails, then a graceful error is returned to the user.
-* **Data Retrieval:**
-  * If a user requests questions, when the API is called, then they receive a list of all questions or a specific question by ID.
-* **Error Handling:**
-  * If an API request fails, when an error occurs, then the user sees a helpful message (not a stack trace).
-  * If DynamoDB is unavailable, when questions are requested, then the system returns a 503 Service Unavailable with retry guidance.
+**Acceptance Criteria:**
+- Questions stored in DynamoDB with on-demand capacity
+- Lambda functions retrieve questions via Scan operation
+- Pagination handled for large datasets
+- DynamoDB types converted properly (sets → arrays)
+- GET /questions returns all questions
+- GET /questions/{id} returns single question
+- Structured JSON logging for all database operations
+
+---
+
+#### Story 4: Infrastructure as Code
+**I want to** define infrastructure using AWS CDK **so that** environments are reproducible, version-controlled, and deployable via CI/CD.
+
+**Acceptance Criteria:**
+- All AWS resources defined in TypeScript CDK code
+- Separate stacks for Alpha and Production environments
+- GitHub Actions deploys infrastructure automatically
+- Trivy scans CDK dependencies for vulnerabilities
+- Production deployments require manual approval
+- CloudWatch alarms configured for Lambda errors and API 5xx errors
+- Structured logging to CloudWatch with request IDs
 
 ---
 
 ## Admin Users
 ### _"As an admin..."_
 
-**Note:** Admin functionality is currently implemented at the API level only. No admin UI exists yet - question management requires direct API calls or AWS Console access to DynamoDB.
+**Note:** Admin functionality is currently implemented at the API level only. No admin UI exists yet.
 
-#### Question Management
-* I want to **add new interview questions via API** so that the question bank can be expanded as requirements change.
-* I want to **ensure only admin users can modify questions** so that content quality is controlled.
-* I want to **have admin actions logged** so that changes are auditable.
+#### Story 1: Manage Question Bank
+**I want to** manage interview questions with proper authorization **so that** the question bank remains high-quality and only authorized users can make changes.
 
-#### Access Control
-* I want to **assign users to admin groups via Cognito** so that question management responsibilities can be delegated.
-* I want to **ensure only authenticated admins can modify data** so that unauthorized changes are prevented.
+**Acceptance Criteria:**
+- Admin users assigned to Cognito "Admin" group
+- Non-admin users receive 403 Forbidden for admin operations
+- Questions can be added/edited via API (no UI yet)
+- Admin actions logged to CloudWatch with user identity and timestamp
+- Role checks enforced in Lambda before DynamoDB writes
 
-### _Acceptance Criteria_
-* **Authorization:** If a non-admin user attempts admin operations via API, then they receive 403 Forbidden.
-* **Audit Logging:** If an admin action occurs, then it is logged in CloudWatch with user identity and timestamp.
+---
+
+#### Story 2: Delegate Admin Responsibilities
+**I want to** assign users to admin groups **so that** question management responsibilities can be shared across the team.
+
+**Acceptance Criteria:**
+- Script exists to add users to Cognito Admin group (`admin_create_user.py`)
+- Group membership reflected in JWT claims
+- Admin permissions take effect immediately after group assignment
 
 ---
 
 ## Platform Administrators
 ### _"As a platform administrator..."_
 
-#### Infrastructure Management
-* I want to **manage infrastructure via AWS CDK** so that environments are version-controlled and reproducible.
-* I want to **deploy to multiple environments** (Alpha, Production) so that changes can be tested before reaching end users.
-* I want to **use separate AWS resources per environment** (Cognito pools, DynamoDB tables, API Gateways) so that environments are isolated.
-* I want to **configure custom domains** for each environment so that users can access the application via friendly URLs.
+#### Story 1: Multi-Environment Infrastructure
+**I want to** manage separate Alpha and Production environments **so that** changes can be tested safely before reaching end users.
 
-#### CI/CD Pipeline
-* I want to **automate builds and deployments** via GitHub Actions so that releases are consistent and repeatable.
-* I want to **run automated tests** (unit tests, linting, type checking) so that code quality is enforced.
-* I want to **scan for security vulnerabilities** (Trivy) so that risky dependencies are flagged before deployment.
-* I want to **require manual approval for production** so that deployments are reviewed by a human before going live.
-* I want to **deploy frontend and backend independently** so that changes can be released in parallel.
+**Acceptance Criteria:**
+- Separate Cognito user pools for Alpha and Production
+- Separate DynamoDB tables per environment
+- Separate API Gateway instances per environment
+- Custom domains: alpha.apaps.people.aws.dev and apaps.people.aws.dev
+- CloudFront distributions per environment
+- S3 buckets per environment
+- Changes to Alpha do not affect Production (full isolation)
 
-#### Monitoring & Alerting
-* I want to **monitor Lambda function performance** (duration, errors, throttles) so that I can identify issues quickly.
-* I want to **monitor API Gateway metrics** (request count, latency, 4xx/5xx errors) so that I can track API health.
-* I want to **set up CloudWatch alarms** for critical errors so that I am notified when issues occur.
-* I want to **enable CloudTrail logging** so that AWS API activity is auditable.
-* I want to **review logs centrally in CloudWatch** so that debugging is efficient.
+---
 
-#### Security & Compliance
-* I want to **enforce least-privilege IAM policies** so that services have only the permissions they need.
-* I want to **enable encryption at rest** (DynamoDB, S3) so that stored data is protected.
-* I want to **enforce HTTPS** for all traffic so that data in transit is encrypted.
-* I want to **rotate credentials and secrets** regularly so that security best practices are followed (future enhancement).
-* I want to **implement AWS WAF** (future) so that the application is protected from common web attacks.
+#### Story 2: Automated CI/CD Pipeline
+**I want to** automate deployments with quality gates **so that** releases are consistent, tested, and secure before reaching production.
 
-#### Cost Optimization
-* I want to **use serverless services** (Lambda, DynamoDB on-demand, S3) so that costs scale with usage.
-* I want to **leverage CloudFront caching** so that static assets are served efficiently and cheaply.
-* I want to **monitor AWS costs** via Cost Explorer so that I can identify optimization opportunities (manual review).
-* I want to **set budget alerts** so that unexpected cost spikes are detected early (future enhancement).
+**Acceptance Criteria:**
+- GitHub Actions triggers on push to main branch
+- Parallel pipelines for frontend and backend
+- Frontend pipeline: ESLint → TypeScript check → Trivy scan → Alpha → Manual approval → Production
+- Backend pipeline: Unit tests → CDK check → Trivy scan → Alpha → Integration tests → Manual approval → Production
+- Security scans fail build if high/critical vulnerabilities found
+- Manual approval required before production deployment
+- Deployment failures roll back automatically (or prevent promotion)
 
-### _Acceptance Criteria_
-* **Environment Isolation:**
-  * If I deploy to Alpha, when I make changes, then Production remains unaffected.
-  * If I deploy to Production, when deployment completes, then Alpha remains unaffected.
-* **Pipeline Automation:**
-  * If I push code to main branch, when CI/CD runs, then Alpha is deployed automatically.
-  * If Alpha deployment succeeds, when I approve the production gate, then Production is deployed.
-* **Monitoring:**
-  * If Lambda errors exceed threshold, when the alarm triggers, then I receive a notification.
-  * If API Gateway 5xx errors occur, when the alarm triggers, then I receive a notification.
-* **Security:**
-  * If HTTPS is not used, when a user tries to connect via HTTP, then they are redirected to HTTPS.
-  * If a Lambda function tries to access a resource it doesn't have permissions for, then the action is denied.
+---
+
+#### Story 3: Monitoring and Observability
+**I want to** monitor system health with alarms and centralized logging **so that** I can detect and resolve issues quickly.
+
+**Acceptance Criteria:**
+- CloudWatch Logs capture all Lambda function output
+- Structured JSON logging with request IDs
+- CloudWatch alarms configured for:
+  - Lambda errors (> threshold)
+  - Lambda throttles
+  - Lambda duration (high latency)
+  - API Gateway 5xx errors
+- Alarms send notifications via SNS (email)
+- CloudTrail enabled for AWS API audit trail
+- Logs retained for minimum 30 days
+
+---
+
+#### Story 4: Security and Cost Management
+**I want to** enforce security best practices and optimize costs **so that** the application is secure and cost-efficient.
+
+**Acceptance Criteria:**
+- IAM roles follow least-privilege principle
+- HTTPS enforced on CloudFront (HTTP redirects)
+- DynamoDB encryption at rest enabled
+- S3 bucket encryption enabled
+- Serverless architecture (Lambda, DynamoDB on-demand) scales with usage
+- CloudFront caching reduces origin requests
+- Cost Explorer available for manual cost review
 
 ---
 
