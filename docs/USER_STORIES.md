@@ -1,10 +1,6 @@
 # EPA Project User Stories
 **RoleReady - Interview Question Bank**
 
-**Version:** 2.1
-**Last Updated:** February 20, 2026
-**Project:** Independent Assessment Submission
-
 ---
 
 ## Table of Contents
