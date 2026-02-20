@@ -1,18 +1,17 @@
 # EPA Project User Stories
 **RoleReady - Interview Question Bank**
 
-**Version:** 2.0
-**Last Updated:** February 2026
+**Version:** 2.1
+**Last Updated:** February 20, 2026
 **Project:** Independent Assessment Submission
 
 ---
 
 ## Table of Contents
 1. [End Users](#end-users)
-2. [AI Interview Coach (Marcus)](#ai-interview-coach-marcus)
-3. [Developers](#developers)
-4. [Admin Users](#admin-users)
-5. [Platform Administrators](#platform-administrators)
+2. [Developers](#developers)
+3. [Admin Users](#admin-users)
+4. [Platform Administrators](#platform-administrators)
 
 ---
 
@@ -21,7 +20,7 @@
 
 #### Authentication & Access
 * I want to **securely create an account** with email and password so that I can access the interview question bank while protecting internal content.
-* I want to **log in with my credentials** so that I can access my personalized experience and practice history.
+* I want to **log in with my credentials** so that I can access the interview question bank and practice questions.
 * I want to **change my password** from my account settings so that I can maintain account security.
 * I want to **securely access the interview question bank** so that internal interview content is protected from unauthorized access.
 
@@ -51,25 +50,6 @@
 
 ---
 
-## AI Interview Coach (Marcus)
-### _"As Marcus, the AI Interview Coach..."_
-
-#### Answer Evaluation
-* I want to **receive the candidate's answer along with the question context** so that I can provide relevant, accurate feedback.
-* I want to **evaluate answers for technical accuracy** so that candidates receive correct guidance.
-* I want to **identify specific strengths** in candidate answers so that they understand what they're doing well.
-* I want to **identify areas for improvement** so that candidates know what to study next.
-* I want to **provide actionable suggestions** so that candidates have concrete next steps.
-* I want to **deliver encouraging, constructive feedback** so that candidates stay motivated and engaged.
-* I want to **score answers on a 0-100 scale** so that candidates can track their progress over time.
-* I want to **respond with structured JSON** so that the frontend can display feedback in a clear, organized format.
-
-#### Feedback Quality
-* I want to **tailor feedback to the competency type** (Leadership Principles, System Design, Technical Depth) so that evaluation is contextually appropriate.
-* I want to **be specific rather than generic** in my feedback so that candidates can take meaningful action.
-* I want to **balance positive reinforcement with improvement areas** so that feedback is constructive and encouraging.
-
----
 
 ## Developers
 ### _"As a developer..."_
@@ -88,6 +68,17 @@
 * I want to **use least-privilege IAM roles** so that each Lambda function has only the permissions it needs.
 * I want to **integrate with AWS Bedrock** so that I can leverage advanced AI models for answer evaluation.
 * I want to **parse and validate AI responses** so that evaluation feedback is always in the expected format.
+
+#### AI Evaluation Implementation (Marcus)
+* I want to **design effective evaluation prompts** so that AI feedback is accurate, constructive, and aligned with interview standards.
+* I want to **structure AI responses as JSON** so that feedback can be easily parsed and displayed in the UI.
+* I want to **tailor AI evaluation to competency types** (Leadership Principles, System Design, Technical Depth) so that feedback is contextually relevant.
+* I want to **balance positive reinforcement with improvement areas** in AI prompts so that feedback is encouraging yet actionable.
+* I want to **handle AI evaluation failures gracefully** so that users receive helpful error messages when the service is unavailable.
+* I want to **validate AI response format** before sending to frontend so that malformed responses don't break the UI.
+* I want to **log AI evaluation metrics** (latency, token usage, error rates) so that I can monitor and optimize the service.
+* I want to **set timeouts for AI calls** so that slow responses don't degrade user experience.
+* I want to **provide clear user feedback during evaluation** ("Marcus is evaluating...") so that users understand processing is happening.
 
 #### Data Management
 * I want to **use DynamoDB for question storage** so that data scales efficiently and is highly available.
@@ -118,12 +109,11 @@
 * **Authentication:**
   * If a user is not authenticated, when they try to access the question bank, then they receive a 401 Unauthorized response.
   * If a JWT token is invalid or expired, when they make an API request, then they are denied access.
-* **Authorization:**
-  * If a user is authenticated but not an admin, when they try to create/edit/delete a question, then the action is denied with a 403 Forbidden response.
-  * If a user is an admin, when they create/edit/delete a question, then the action succeeds and is logged.
 * **AI Evaluation:**
   * If a user submits an answer, when Marcus evaluates it, then they receive a structured response within 10 seconds.
   * If the AI response is malformed, when parsing fails, then a graceful error is returned to the user.
+* **Data Retrieval:**
+  * If a user requests questions, when the API is called, then they receive a list of all questions or a specific question by ID.
 * **Error Handling:**
   * If an API request fails, when an error occurs, then the user sees a helpful message (not a stack trace).
   * If DynamoDB is unavailable, when questions are requested, then the system returns a 503 Service Unavailable with retry guidance.
@@ -133,35 +123,20 @@
 ## Admin Users
 ### _"As an admin..."_
 
+**Note:** Admin functionality is currently implemented at the API level only. No admin UI exists yet - question management requires direct API calls or AWS Console access to DynamoDB.
+
 #### Question Management
-* I want to **add new interview questions to the system** so that the question bank can be expanded as requirements change.
-* I want to **include question metadata** (category, difficulty, competency, reference answer) so that questions are well-organized and searchable.
-* I want to **edit existing interview questions** so that content can be corrected or improved over time.
-* I want to **delete interview questions when they are no longer relevant** so that the question bank remains accurate and up-to-date.
-* I want to **categorize questions by competency** (Leadership Principles, System Design, Technical Depth) so that questions align with evaluation frameworks.
+* I want to **add new interview questions via API** so that the question bank can be expanded as requirements change.
+* I want to **ensure only admin users can modify questions** so that content quality is controlled.
+* I want to **have admin actions logged** so that changes are auditable.
 
 #### Access Control
-* I want to **control who can create, edit, or delete questions** so that only authorized users can modify interview content.
-* I want to **assign users to admin groups** so that question management responsibilities can be delegated.
-* I want to **ensure admin actions are authenticated and authorized** so that unauthorized modifications are prevented.
-
-#### Audit & Accountability
-* I want to **review changes made to interview questions** so that unauthorized or incorrect modifications can be identified.
-* I want to **see an audit trail** (what changed, who changed it, when) so that I can track question evolution and accountability.
-* I want to **have changes logged in CloudWatch** so that audit records are centralized and searchable.
+* I want to **assign users to admin groups via Cognito** so that question management responsibilities can be delegated.
+* I want to **ensure only authenticated admins can modify data** so that unauthorized changes are prevented.
 
 ### _Acceptance Criteria_
-* **Question Creation:**
-  * If I am an admin, when I create a question, then it is immediately available to end users.
-  * If I am not an admin, when I try to create a question, then I receive a 403 Forbidden error.
-* **Question Editing:**
-  * If I edit a question, when I save changes, then the updated version is reflected immediately.
-  * If I edit a question, when I save changes, then the action is logged with my user ID and timestamp.
-* **Question Deletion:**
-  * If I delete a question, when I confirm the action, then it is removed from the question bank.
-  * If I delete a question, when the deletion completes, then the action is logged in CloudWatch.
-* **Audit Trail:**
-  * If a question has been created/edited/deleted, when I view the change history, then I can see what changed, who changed it, and when.
+* **Authorization:** If a non-admin user attempts admin operations via API, then they receive 403 Forbidden.
+* **Audit Logging:** If an admin action occurs, then it is logged in CloudWatch with user identity and timestamp.
 
 ---
 
@@ -192,14 +167,14 @@
 * I want to **enforce least-privilege IAM policies** so that services have only the permissions they need.
 * I want to **enable encryption at rest** (DynamoDB, S3) so that stored data is protected.
 * I want to **enforce HTTPS** for all traffic so that data in transit is encrypted.
-* I want to **rotate credentials and secrets** regularly so that security best practices are followed.
+* I want to **rotate credentials and secrets** regularly so that security best practices are followed (future enhancement).
 * I want to **implement AWS WAF** (future) so that the application is protected from common web attacks.
 
 #### Cost Optimization
 * I want to **use serverless services** (Lambda, DynamoDB on-demand, S3) so that costs scale with usage.
 * I want to **leverage CloudFront caching** so that static assets are served efficiently and cheaply.
-* I want to **monitor AWS costs** via Cost Explorer so that I can identify optimization opportunities.
-* I want to **set budget alerts** so that unexpected cost spikes are detected early.
+* I want to **monitor AWS costs** via Cost Explorer so that I can identify optimization opportunities (manual review).
+* I want to **set budget alerts** so that unexpected cost spikes are detected early (future enhancement).
 
 ### _Acceptance Criteria_
 * **Environment Isolation:**
@@ -221,44 +196,11 @@
 
 ### User Personas Summary
 1. **End User (Candidate):** Prepares for interviews by practicing questions and receiving AI feedback.
-2. **Marcus (AI Coach):** AWS Bedrock-powered assistant that evaluates answers and provides constructive feedback.
-3. **Developer:** Builds and maintains the application, ensuring security, reliability, and code quality.
-4. **Admin User:** Manages interview questions, ensuring content is accurate and up-to-date.
-5. **Platform Administrator:** Manages infrastructure, deployments, monitoring, and security.
+2. **Developer:** Builds and maintains the application, ensuring security, reliability, and code quality.
+3. **Admin User:** Manages interview questions, ensuring content is accurate and up-to-date.
+4. **Platform Administrator:** Manages infrastructure, deployments, monitoring, and security.
 
-### Technology Stack
-- **Frontend:** React 19, TypeScript, Vite
-- **Backend:** Python 3.14, AWS Lambda
-- **Database:** DynamoDB
-- **AI:** AWS Bedrock (Claude 3.7 Sonnet)
-- **Authentication:** AWS Cognito
-- **Infrastructure:** AWS CDK (TypeScript)
-- **CI/CD:** GitHub Actions
-- **Hosting:** S3 + CloudFront
-- **Monitoring:** CloudWatch, CloudTrail
+**Document Version:** 2.1
+**Last Updated:** February 20, 2026
+**Updated By:** Antho103
 
-### Key Features Implemented
-- ✅ User authentication and authorization (Cognito)
-- ✅ Question browsing with search and filters
-- ✅ AI-powered answer evaluation (Marcus)
-- ✅ Practice mode with instant feedback
-- ✅ Multi-environment deployment (Alpha, Production)
-- ✅ Automated CI/CD pipeline with security scanning
-- ✅ Structured logging and monitoring
-- ✅ Responsive design (desktop, tablet, mobile)
-
-### Future Enhancements (Roadmap)
-- 📝 Admin UI for question CRUD operations
-- 📊 User progress tracking and analytics
-- 🏆 Gamification (badges, streaks, leaderboards)
-- 🧪 Mock interview simulator (timed questions)
-- 🎙️ Voice answer practice (speech-to-text)
-- 📱 Mobile native apps
-
----
-
-**Document Version:** 2.0
-**Original Source:** EPA Project User Stories (Quip)
-**Last Updated:** February 2026
-**Updated By:** Andreas Papasavvas (apaps)
-**Status:** Living Document

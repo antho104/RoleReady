@@ -162,4 +162,4 @@ Private project - All rights reserved
 
 **Last Updated:** 2026-02-20
 **Version:** 2.0
-**Author:** Andreas Papasavvas (apaps)
+**Author:** Antho103
