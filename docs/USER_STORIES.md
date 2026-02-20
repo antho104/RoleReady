@@ -18,15 +18,16 @@
 ## End Users
 ### _"As an end user..."_
 
-#### Story 1: Secure Access to Question Bank
-**I want to** securely authenticate and access the interview question bank **so that** I can prepare for interviews while keeping content protected.
+#### Story 1: Create Account and Access Questions
+**I want to** create an account and log in **so that** I can access the interview question bank and prepare for my interviews.
 
 **Acceptance Criteria:**
-- User can sign up with email and password (min 8 chars, complexity requirements)
-- User can log in and receive JWT token for authenticated access
-- User can change password from account settings
-- Unauthenticated users are denied access to questions (401 response)
-- Session remains secure with HTTPS enforcement
+- I can sign up using my email address
+- I receive a temporary password via email that I must change on first login
+- I can log in with my email and password
+- I can change my password from my account settings if needed
+- I cannot access questions without logging in (shown a login prompt)
+- My session stays logged in until I log out or it expires
 
 ---
 
