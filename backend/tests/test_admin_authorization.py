@@ -129,7 +129,7 @@ def test_post_question_as_admin():
     event = create_event(
         "POST",
         "/questions",
-        body={"question": "What is AWS?", "category": "AWS", "competency_type": "Technical", "answer": "Cloud platform"},
+        body={"question": "What is AWS?", "category": "AWS", "answer": "Cloud platform"},
         groups="Admin"
     )
 
@@ -149,7 +149,7 @@ def test_post_question_as_non_admin():
     event = create_event(
         "POST",
         "/questions",
-        body={"question": "What is AWS?", "category": "AWS", "competency_type": "Technical"},
+        body={"question": "What is AWS?", "category": "AWS"},
         groups="Users"
     )
 
@@ -249,7 +249,7 @@ def test_post_question_missing_required_fields():
     event = create_event(
         "POST",
         "/questions",
-        body={"question": "What is AWS?"},  # Missing category and competency_type
+        body={"question": "What is AWS?"},  # Missing category
         groups="Admin"
     )
 

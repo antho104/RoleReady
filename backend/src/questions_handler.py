@@ -213,7 +213,7 @@ def handler(event, context):
                 body = json.loads(event.get("body", "{}"))
 
                 # Validate required fields
-                required_fields = ["question", "category", "competency_type"]
+                required_fields = ["question", "category"]
                 for field in required_fields:
                     if field not in body:
                         return {
@@ -230,7 +230,6 @@ def handler(event, context):
                     "id": question_id,
                     "question": body["question"],
                     "category": body["category"],
-                    "competency_type": body["competency_type"],
                     "answer": body.get("answer", ""),
                 }
 
@@ -310,7 +309,7 @@ def handler(event, context):
                     }
 
                 # Build update expression
-                update_fields = ["question", "category", "competency_type", "answer"]
+                update_fields = ["question", "category", "answer"]
                 update_expr = "SET " + ", ".join(
                     [f"#{f} = :{f}" for f in update_fields if f in body]
                 )

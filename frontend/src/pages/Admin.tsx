@@ -19,7 +19,6 @@ function Admin() {
   const [formData, setFormData] = useState({
     question_text: '',
     category: '',
-    competency: '',
     difficulty: 'Medium',
     reference_answer: '',
   });
@@ -114,14 +113,13 @@ function Admin() {
         body: JSON.stringify({
           question: formData.question_text,
           category: formData.category,
-          competency_type: formData.competency,
           answer: formData.reference_answer,
         }),
       });
 
       if (response.ok) {
         await loadQuestions();
-        setFormData({ question_text: '', category: '', competency: '', difficulty: 'Medium', reference_answer: '' });
+        setFormData({ question_text: '', category: '', difficulty: 'Medium', reference_answer: '' });
         setShowCreateForm(false);
         alert('Question created successfully!');
       } else {
@@ -152,7 +150,6 @@ function Admin() {
         body: JSON.stringify({
           question: editingQuestion.question_text,
           category: editingQuestion.category,
-          competency_type: editingQuestion.competency,
           answer: editingQuestion.reference_answer,
         }),
       });
@@ -262,32 +259,13 @@ function Admin() {
             <div className="form-row">
               <div className="form-group">
                 <label>Category:</label>
-                <select
+                <input
+                  type="text"
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   required
-                >
-                  <option value="">Select category...</option>
-                  <option value="AWS">AWS</option>
-                  <option value="Azure">Azure</option>
-                  <option value="GCP">GCP</option>
-                  <option value="Leadership">Leadership</option>
-                  <option value="System Design">System Design</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Competency:</label>
-                <select
-                  value={formData.competency}
-                  onChange={(e) => setFormData({ ...formData, competency: e.target.value })}
-                  required
-                >
-                  <option value="">Select competency...</option>
-                  <option value="Technical">Technical</option>
-                  <option value="Behavioral">Behavioral</option>
-                  <option value="Situational">Situational</option>
-                </select>
+                  placeholder="e.g., AWS, System Design, Automation..."
+                />
               </div>
 
               <div className="form-group">
@@ -337,30 +315,13 @@ function Admin() {
             <div className="form-row">
               <div className="form-group">
                 <label>Category:</label>
-                <select
+                <input
+                  type="text"
                   value={editingQuestion.category}
                   onChange={(e) => setEditingQuestion({ ...editingQuestion, category: e.target.value })}
                   required
-                >
-                  <option value="AWS">AWS</option>
-                  <option value="Azure">Azure</option>
-                  <option value="GCP">GCP</option>
-                  <option value="Leadership">Leadership</option>
-                  <option value="System Design">System Design</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Competency:</label>
-                <select
-                  value={editingQuestion.competency}
-                  onChange={(e) => setEditingQuestion({ ...editingQuestion, competency: e.target.value })}
-                  required
-                >
-                  <option value="Technical">Technical</option>
-                  <option value="Behavioral">Behavioral</option>
-                  <option value="Situational">Situational</option>
-                </select>
+                  placeholder="e.g., AWS, System Design, Automation..."
+                />
               </div>
 
               <div className="form-group">
