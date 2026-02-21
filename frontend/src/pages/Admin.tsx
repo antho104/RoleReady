@@ -74,7 +74,6 @@ function Admin() {
   const filteredQuestions = useMemo(() => {
     return questions.filter(question => {
       const matchesSearch = question.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           question.competency.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            question.category.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory = selectedCategory === 'All' || question.category === selectedCategory;
@@ -111,9 +110,10 @@ function Admin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          question: formData.question_text,
+          question_text: formData.question_text,
           category: formData.category,
-          answer: formData.reference_answer,
+          difficulty: formData.difficulty,
+          reference_answer: formData.reference_answer,
         }),
       });
 
@@ -148,9 +148,10 @@ function Admin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          question: editingQuestion.question_text,
+          question_text: editingQuestion.question_text,
           category: editingQuestion.category,
-          answer: editingQuestion.reference_answer,
+          difficulty: editingQuestion.difficulty,
+          reference_answer: editingQuestion.reference_answer,
         }),
       });
 

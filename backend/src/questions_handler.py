@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import sys
+from datetime import datetime, timezone
 import uuid
 import boto3
 
@@ -214,6 +215,7 @@ def handler(event, context):
 
                 # Validate required fields
                 required_fields = ["question", "category"]
+                required_fields = ["question_text", "category", "difficulty"]
                 for field in required_fields:
                     if field not in body:
                         return {
@@ -228,9 +230,11 @@ def handler(event, context):
                 question_id = str(uuid.uuid4())
                 item = {
                     "id": question_id,
-                    "question": body["question"],
+                    "question_text": body["question_text"],
                     "category": body["category"],
-                    "answer": body.get("answer", ""),
+                    "difficulty": body["difficulty"],
+                    "reference_answer": body.get("reference_answer", ""),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                 }
 
                 table.put_item(Item=item)
@@ -309,7 +313,7 @@ def handler(event, context):
                     }
 
                 # Build update expression
-                update_fields = ["question", "category", "answer"]
+                update_fields = ["question_text", "category", "difficulty", "reference_answer"]
                 update_expr = "SET " + ", ".join(
                     [f"#{f} = :{f}" for f in update_fields if f in body]
                 )

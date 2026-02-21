@@ -129,7 +129,7 @@ def test_post_question_as_admin():
     event = create_event(
         "POST",
         "/questions",
-        body={"question": "What is AWS?", "category": "AWS", "answer": "Cloud platform"},
+        body={"question_text": "What is AWS?", "category": "AWS", "difficulty": "Medium", "reference_answer": "Cloud platform"},
         groups="Admin"
     )
 
@@ -141,7 +141,7 @@ def test_post_question_as_admin():
     assert response["statusCode"] == 201
     body = json.loads(response["body"])
     assert "id" in body
-    assert body["question"] == "What is AWS?"
+    assert body["question_text"] == "What is AWS?"
 
 
 def test_post_question_as_non_admin():
@@ -149,7 +149,7 @@ def test_post_question_as_non_admin():
     event = create_event(
         "POST",
         "/questions",
-        body={"question": "What is AWS?", "category": "AWS"},
+        body={"question_text": "What is AWS?", "category": "AWS", "difficulty": "Easy"},
         groups="Users"
     )
 
@@ -165,14 +165,14 @@ def test_post_question_as_non_admin():
 def test_put_question_as_admin():
     """Test PUT question succeeds for admin"""
     mock_table.get_item.return_value = {
-        "Item": {"id": "123", "question": "Old question", "category": "AWS", "competency_type": "Technical"}
+        "Item": {"id": "123", "question_text": "Old question", "category": "AWS", "difficulty": "Medium"}
     }
     mock_table.update_item.return_value = {}
 
     event = create_event(
         "PUT",
         "/questions/123",
-        body={"question": "Updated question"},
+        body={"question_text": "Updated question", "difficulty": "Hard"},
         groups="Admin"
     )
 
@@ -189,7 +189,7 @@ def test_put_question_as_non_admin():
     event = create_event(
         "PUT",
         "/questions/123",
-        body={"question": "Updated question"},
+        body={"question_text": "Updated question"},
         groups="Users"
     )
 
@@ -230,7 +230,7 @@ def test_delete_question_as_non_admin():
 def test_get_question_allows_all_users():
     """Test GET question works for any authenticated user (not just admins)"""
     mock_table.get_item.return_value = {
-        "Item": {"id": "123", "question": "Test question", "category": "AWS", "competency_type": "Technical"}
+        "Item": {"id": "123", "question_text": "Test question", "category": "AWS", "difficulty": "Easy"}
     }
 
     # Non-admin user
@@ -249,7 +249,7 @@ def test_post_question_missing_required_fields():
     event = create_event(
         "POST",
         "/questions",
-        body={"question": "What is AWS?"},  # Missing category
+        body={"question_text": "What is AWS?"},  # Missing category and difficulty
         groups="Admin"
     )
 
