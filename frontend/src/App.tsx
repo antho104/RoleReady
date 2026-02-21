@@ -20,7 +20,7 @@ function NavBar() {
         const session = await fetchAuthSession();
         const groups = session.tokens?.accessToken?.payload['cognito:groups'] as string[] || [];
         setIsAdmin(groups.includes('Admin'));
-      } catch (error) {
+      } catch {
         // User not authenticated or session unavailable
       }
     };

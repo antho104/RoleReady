@@ -68,7 +68,6 @@ function Admin() {
     };
 
     checkAdminAccess();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCreateQuestion = async (e: React.FormEvent) => {
