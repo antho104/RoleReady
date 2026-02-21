@@ -88,7 +88,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Configure AWS Credentials for CDK synth
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::431081169070:role/github-actions-deploy
           aws-region: eu-west-1
@@ -117,7 +117,7 @@ jobs:
         run: npm ci
 
       - name: Configure AWS Credentials (Alpha)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::265870078323:role/github-actions-deploy
           aws-region: eu-west-1
@@ -155,7 +155,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Configure AWS Credentials (Alpha)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::265870078323:role/github-actions-deploy
           aws-region: eu-west-1
@@ -197,7 +197,7 @@ jobs:
         run: npm ci
 
       - name: Configure AWS Credentials (Prod)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::431081169070:role/github-actions-deploy
           aws-region: eu-west-1
