@@ -89,6 +89,15 @@
   background: none;
 }
 
+/* Admin link styling */
+.admin-link {
+  background-color: #ffc107;
+  color: #000 !important;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
 .user-email {
   color: var(--text-dark);
   font-weight: 600;
@@ -130,3 +139,12 @@
 .footer p {
   margin: 0;
 }
+
+.admin-link {
+  background-color: #ffc107;
+  color: #000 !important;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+

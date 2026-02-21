@@ -163,6 +163,19 @@ export class ServiceStack extends cdk.Stack {
       preventUserExistenceErrors: true,
     });
 
+    // Create Admin group for privileged users
+    const adminGroup = new cognito.CfnUserPoolGroup(this, 'AdminGroup', {
+      userPoolId: userPool.userPoolId,
+      groupName: 'Admin',
+      description: 'Administrators with full access to PUT/DELETE/POST operations',
+      precedence: 1,  // Higher priority (lower number = higher precedence)
+    });
+
+    new cdk.CfnOutput(this, 'AdminGroupName', {
+      value: adminGroup.groupName || 'Admin',
+      description: 'Cognito Admin Group Name',
+    });
+
     new cdk.CfnOutput(this, 'UserPoolId', {
       value: userPool.userPoolId,
       description: 'Cognito User Pool ID',

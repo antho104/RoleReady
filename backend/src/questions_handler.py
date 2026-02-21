@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import sys
+import uuid
 import boto3
 
 # Import custom metrics
@@ -77,6 +78,76 @@ def convert_dynamodb_item(item):
         return item
 
 
+def get_user_groups(event):
+    """
+    Extract Cognito groups from the API Gateway event.
+
+    Returns:
+        List of group names the user belongs to (empty list if none)
+    """
+    try:
+        claims = event.get("requestContext", {}).get("authorizer", {}).get("claims", {})
+        groups_claim = claims.get("cognito:groups", "")
+
+        if not groups_claim:
+            return []
+
+        # Groups can be comma-separated string or already a list
+        if isinstance(groups_claim, str):
+            return [g.strip() for g in groups_claim.split(",") if g.strip()]
+        elif isinstance(groups_claim, list):
+            return groups_claim
+
+        return []
+    except Exception as e:
+        logger.warning(f"Failed to extract user groups: {str(e)}")
+        return []
+
+
+def is_admin(event):
+    """
+    Check if the authenticated user is an admin.
+
+    Returns:
+        True if user is in the Admin group, False otherwise
+    """
+    groups = get_user_groups(event)
+    return "Admin" in groups
+
+
+def require_admin(event):
+    """
+    Check admin access and return error response if not admin.
+
+    Returns:
+        None if user is admin, error response dict otherwise
+    """
+    if not is_admin(event):
+        user_sub = (
+            event.get("requestContext", {})
+            .get("authorizer", {})
+            .get("claims", {})
+            .get("sub", "unknown")
+        )
+        logger.warning(f"Unauthorized admin access attempt by user: {user_sub}")
+
+        return {
+            "statusCode": 403,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Content-Type": "application/json",
+            },
+            "body": json.dumps(
+                {
+                    "error": "Forbidden",
+                    "message": "Admin access required for this operation",
+                }
+            ),
+        }
+
+    return None
+
+
 def handler(event, context):
     """
     Main Lambda handler for question operations.
@@ -132,6 +203,49 @@ def handler(event, context):
                     "body": json.dumps(items),
                 }
 
+            elif method == "POST":
+                # Check admin access
+                admin_check = require_admin(event)
+                if admin_check:
+                    return admin_check
+
+                # Create new question
+                body = json.loads(event.get("body", "{}"))
+
+                # Validate required fields
+                required_fields = ["question", "category", "competency_type"]
+                for field in required_fields:
+                    if field not in body:
+                        return {
+                            "statusCode": 400,
+                            "headers": {"Access-Control-Allow-Origin": "*"},
+                            "body": json.dumps(
+                                {"error": f"Missing required field: {field}"}
+                            ),
+                        }
+
+                # Generate ID and create item
+                question_id = str(uuid.uuid4())
+                item = {
+                    "id": question_id,
+                    "question": body["question"],
+                    "category": body["category"],
+                    "competency_type": body["competency_type"],
+                    "answer": body.get("answer", ""),
+                }
+
+                table.put_item(Item=item)
+
+                logger.info(
+                    "Question created", extra={**log_extra, "question_id": question_id}
+                )
+
+                return {
+                    "statusCode": 201,
+                    "headers": {"Access-Control-Allow-Origin": "*"},
+                    "body": json.dumps(item),
+                }
+
         # Get single question by ID
         elif path.startswith("/questions/"):
             question_id = path.split("/")[-1]
@@ -175,6 +289,80 @@ def handler(event, context):
                     "statusCode": 404,
                     "headers": {"Access-Control-Allow-Origin": "*"},
                     "body": json.dumps({"error": "Not found"}),
+                }
+
+            elif method == "PUT":
+                # Check admin access
+                admin_check = require_admin(event)
+                if admin_check:
+                    return admin_check
+
+                # Update existing question
+                body = json.loads(event.get("body", "{}"))
+
+                # Check if question exists
+                response = table.get_item(Key={"id": question_id})
+                if "Item" not in response:
+                    return {
+                        "statusCode": 404,
+                        "headers": {"Access-Control-Allow-Origin": "*"},
+                        "body": json.dumps({"error": "Question not found"}),
+                    }
+
+                # Build update expression
+                update_fields = ["question", "category", "competency_type", "answer"]
+                update_expr = "SET " + ", ".join(
+                    [f"#{f} = :{f}" for f in update_fields if f in body]
+                )
+                expr_attr_names = {f"#{f}": f for f in update_fields if f in body}
+                expr_attr_values = {
+                    f":{f}": body[f] for f in update_fields if f in body
+                }
+
+                if not expr_attr_values:
+                    return {
+                        "statusCode": 400,
+                        "headers": {"Access-Control-Allow-Origin": "*"},
+                        "body": json.dumps({"error": "No fields to update"}),
+                    }
+
+                table.update_item(
+                    Key={"id": question_id},
+                    UpdateExpression=update_expr,
+                    ExpressionAttributeNames=expr_attr_names,
+                    ExpressionAttributeValues=expr_attr_values,
+                )
+
+                # Fetch updated item
+                updated = table.get_item(Key={"id": question_id})
+
+                logger.info(
+                    "Question updated", extra={**log_extra, "question_id": question_id}
+                )
+                return {
+                    "statusCode": 200,
+                    "headers": {"Access-Control-Allow-Origin": "*"},
+                    "body": json.dumps(convert_dynamodb_item(updated["Item"])),
+                }
+
+            elif method == "DELETE":
+                # Check admin access
+                admin_check = require_admin(event)
+                if admin_check:
+                    return admin_check
+
+                # TODO: Implement delete question logic
+                logger.info(
+                    "Deleting question",
+                    extra={**log_extra, "question_id": question_id},
+                )
+
+                table.delete_item(Key={"id": question_id})
+
+                return {
+                    "statusCode": 204,
+                    "headers": {"Access-Control-Allow-Origin": "*"},
+                    "body": "",
                 }
 
         # Default response
