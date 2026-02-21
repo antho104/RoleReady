@@ -25,29 +25,6 @@ function Admin() {
   });
   const navigate = useNavigate();
 
-  useEffect(() => {
-    checkAdminAccess();
-  }, []);
-
-  const checkAdminAccess = async () => {
-    try {
-      const session = await fetchAuthSession();
-      const groups = session.tokens?.accessToken?.payload['cognito:groups'] as string[] || [];
-
-      if (groups.includes('Admin')) {
-        setIsAdmin(true);
-        fetchQuestions();
-      } else {
-        setIsAdmin(false);
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Error checking admin access:', error);
-      setIsAdmin(false);
-      setLoading(false);
-    }
-  };
-
   const fetchQuestions = async () => {
     try {
       const session = await fetchAuthSession();
@@ -69,6 +46,30 @@ function Admin() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      try {
+        const session = await fetchAuthSession();
+        const groups = session.tokens?.accessToken?.payload['cognito:groups'] as string[] || [];
+
+        if (groups.includes('Admin')) {
+          setIsAdmin(true);
+          fetchQuestions();
+        } else {
+          setIsAdmin(false);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error checking admin access:', error);
+        setIsAdmin(false);
+        setLoading(false);
+      }
+    };
+
+    checkAdminAccess();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleCreateQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
