@@ -58,7 +58,6 @@ export default function Questions() {
   const filteredQuestions = useMemo(() => {
     return questions.filter(question => {
       const matchesSearch = question.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           question.competency.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            question.category.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory = selectedCategory === 'All' || question.category === selectedCategory;
@@ -105,7 +104,6 @@ export default function Questions() {
         {
           question: selectedQuestion.question_text,
           answer: userAnswer,
-          competency_type: selectedQuestion.competency,
         },
         token
       );
