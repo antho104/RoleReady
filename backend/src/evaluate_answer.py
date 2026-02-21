@@ -1,5 +1,7 @@
 import json
 import boto3
+import time
+from custom_metrics import EvaluationMetrics
 
 bedrock = boto3.client("bedrock-runtime", region_name="eu-west-2")
 
@@ -7,8 +9,15 @@ bedrock = boto3.client("bedrock-runtime", region_name="eu-west-2")
 def handler(event, context):
     """
     Marcus - AI Interview Coach via direct Bedrock invocation
+
+    Emits custom metrics:
+    - Answer evaluation counts and scores
+    - AI response times
+    - User engagement tracking
     """
     try:
+        start_time = time.time()
+
         body = json.loads(event.get("body", "{}"))
         question_text = body.get("question")
         user_answer = body.get("answer")
@@ -68,6 +77,19 @@ Be constructive, specific, and encouraging."""
         # Parse JSON from Marcus
         feedback = json.loads(feedback_text)
 
+        # Calculate AI response time
+        response_time_ms = (time.time() - start_time) * 1000
+
+        # Emit custom metrics
+        EvaluationMetrics.answer_evaluated(
+            score=feedback.get("score", 0),
+            competency_type=competency_type,
+            is_correct=feedback.get("is_correct", False),
+        )
+        EvaluationMetrics.evaluation_success()
+        EvaluationMetrics.ai_response_time(response_time_ms)
+        EvaluationMetrics.user_engagement(feedback.get("score", 0))
+
         return {
             "statusCode": 200,
             "headers": {"Access-Control-Allow-Origin": "*"},
@@ -75,6 +97,10 @@ Be constructive, specific, and encouraging."""
         }
 
     except Exception as e:
+        # Track evaluation failures
+        error_type = type(e).__name__
+        EvaluationMetrics.evaluation_failure(error_type)
+
         return {
             "statusCode": 500,
             "headers": {"Access-Control-Allow-Origin": "*"},

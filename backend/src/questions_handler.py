@@ -16,6 +16,9 @@ import os
 import sys
 import boto3
 
+# Import custom metrics
+from custom_metrics import QuestionsMetrics
+
 # Configure JSON structured logging for CloudWatch
 logger = logging.getLogger()
 log_level = os.environ.get("LOG_LEVEL", "INFO")
@@ -86,6 +89,10 @@ def handler(event, context):
     # Create logger adapter with request context
     log_extra = {"request_id": request_id, "method": method, "path": path}
 
+    import time
+
+    start_time = time.time()
+
     logger.info("Incoming request", extra=log_extra)
 
     try:
@@ -106,6 +113,13 @@ def handler(event, context):
                     items.extend(response.get("Items", []))
 
                 items = [convert_dynamodb_item(item) for item in items]
+
+                # Emit custom metrics
+                QuestionsMetrics.questions_retrieved(len(items))
+
+                # Track API latency
+                latency_ms = (time.time() - start_time) * 1000
+                QuestionsMetrics.api_latency(latency_ms, "ListQuestions")
 
                 logger.info(
                     "Successfully retrieved questions",
@@ -132,6 +146,14 @@ def handler(event, context):
 
                 if "Item" in response:
                     item = convert_dynamodb_item(response["Item"])
+
+                    # Emit custom metrics for question view
+                    category = item.get("category", "Unknown")
+                    QuestionsMetrics.question_viewed(question_id, category)
+
+                    latency_ms = (time.time() - start_time) * 1000
+                    QuestionsMetrics.api_latency(latency_ms, "GetQuestion")
+
                     logger.info(
                         "Question found",
                         extra={**log_extra, "question_id": question_id},
@@ -141,6 +163,9 @@ def handler(event, context):
                         "headers": {"Access-Control-Allow-Origin": "*"},
                         "body": json.dumps(item),
                     }
+
+                # Track 404 errors
+                QuestionsMetrics.question_not_found()
 
                 logger.warning(
                     "Question not found",

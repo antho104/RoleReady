@@ -272,6 +272,13 @@ export class ServiceStack extends cdk.Stack {
     // Grant the Lambda function read/write permissions to the table
     table.grantReadWriteData(questionsHandler);
 
+    // Grant permission to emit custom CloudWatch metrics
+    questionsHandler.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['cloudwatch:PutMetricData'],
+      resources: ['*'],
+      conditions: { 'StringEquals': { 'cloudwatch:namespace': 'RoleReady' } }
+    }));
+
     // Lambda for Marcus evaluation (direct model invocation)
     const evaluateAnswerFn = new lambda.Function(this, 'EvaluateAnswerFunction', {
       runtime: lambda.Runtime.PYTHON_3_11,
@@ -284,6 +291,13 @@ export class ServiceStack extends cdk.Stack {
     evaluateAnswerFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
       resources: ['arn:aws:bedrock:eu-west-2::foundation-model/anthropic.claude-3-7-sonnet-20250219-v1:0'],
+    }));
+
+    // Grant permission to emit custom CloudWatch metrics
+    evaluateAnswerFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['cloudwatch:PutMetricData'],
+      resources: ['*'],
+      conditions: { 'StringEquals': { 'cloudwatch:namespace': 'RoleReady' } }
     }));
 
     // Lambda for user signup (bypasses selfSignUpEnabled restriction)
