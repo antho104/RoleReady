@@ -1,110 +1,41 @@
-.admin-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-.admin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.admin-header h1 {
-  margin: 0;
-  color: #333;
-}
+/* Admin-specific styles that extend Questions.css */
 
 .admin-actions {
   margin: 2rem 0;
+  text-align: center;
 }
 
-.btn-primary {
-  background-color: #007bff;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
+.admin-actions .btn-primary {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
 }
 
-.btn-primary:hover {
-  background-color: #0056b3;
-}
-
-.btn-success {
-  background-color: #28a745;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.btn-success:hover {
-  background-color: #218838;
-}
-
-.btn-secondary {
-  background-color: #6c757d;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  margin-left: 0.5rem;
-}
-
-.btn-secondary:hover {
-  background-color: #545b62;
-}
-
-.btn-edit {
-  background-color: #ffc107;
-  color: #000;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-right: 0.5rem;
-}
-
-.btn-edit:hover {
-  background-color: #e0a800;
-}
-
-.btn-delete {
-  background-color: #dc3545;
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-delete:hover {
-  background-color: #c82333;
-}
-
-.question-form {
-  background-color: #f8f9fa;
+.question-form-modal {
+  background: white;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
   padding: 2rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin: 2rem 0;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease-out;
 }
 
-.question-form h2 {
-  margin-top: 0;
-  color: #333;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.question-form-modal h2 {
+  margin: 0 0 1.5rem 0;
+  color: var(--text-dark);
+  font-size: 1.75rem;
+  font-weight: 700;
 }
 
 .form-group {
@@ -114,152 +45,89 @@
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #555;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 1rem;
 }
 
 .form-group input,
 .form-group textarea,
 .form-group select {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: 10px;
   font-size: 1rem;
   font-family: inherit;
+  background: var(--bg-secondary);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .form-group textarea {
   resize: vertical;
+  line-height: 1.6;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
 .form-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
-.questions-list {
-  margin-top: 2rem;
-}
-
-.questions-list h2 {
-  color: #333;
-  margin-bottom: 1rem;
-}
-
-.no-questions {
-  text-align: center;
-  color: #666;
-  padding: 2rem;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-}
-
-.question-card {
-  background-color: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.question-card:hover {
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-}
-
-.question-content {
+.form-buttons .btn {
   flex: 1;
 }
 
-.question-content h3 {
-  margin: 0 0 1rem 0;
-  color: #333;
-  font-size: 1.1rem;
-}
-
-.question-meta {
+.admin-buttons {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
-.badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  background-color: #007bff;
-  color: white;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
+.btn-edit {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+  color: #78350f !important;
 }
 
-.answer-details {
-  margin-top: 1rem;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-left: 3px solid #007bff;
-  border-radius: 4px;
+.btn-edit:hover {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
 }
 
-.answer-details summary {
-  cursor: pointer;
-  font-weight: 500;
-  color: #007bff;
+.btn-delete {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: white !important;
 }
 
-.answer-details p {
-  margin: 0.5rem 0 0 0;
-  color: #555;
-  line-height: 1.6;
+.btn-delete:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
 }
 
-.question-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-start;
-}
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 
-.access-denied {
-  text-align: center;
-  padding: 4rem 2rem;
-  background-color: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 8px;
-  margin-top: 2rem;
-}
+  .admin-buttons {
+    width: 100%;
+    flex-direction: column;
+  }
 
-.access-denied h1 {
-  color: #856404;
-  margin-bottom: 1rem;
-}
-
-.access-denied p {
-  color: #856404;
-  margin: 0.5rem 0;
-}
-
-.access-denied button {
-  margin-top: 1.5rem;
-  padding: 0.75rem 2rem;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.access-denied button:hover {
-  background-color: #0056b3;
-}
-
-.loading {
-  text-align: center;
-  padding: 4rem;
-  font-size: 1.2rem;
-  color: #666;
+  .admin-buttons .btn {
+    width: 100%;
+  }
 }
