@@ -456,7 +456,6 @@ function Admin() {
               <div className="question-footer">
                 <div className="question-tags">
                   <span className="tag">{capitalizeCategory(question.category)}</span>
-                  <span className="tag">{question.competency}</span>
                 </div>
                 <div className="admin-buttons">
                   <button
