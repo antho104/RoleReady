@@ -3,8 +3,7 @@ import { awsConfig } from '../aws-config';
 export interface Question {
   id: string;
   category: string;
-  competency: string;
-  create_at: string;
+  created_at: string;
   difficulty: string;
   question_text: string;
   reference_answer: string;
