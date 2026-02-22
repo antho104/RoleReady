@@ -88,11 +88,12 @@ The Interview Question Bank is a serverless web application hosted on AWS. Stati
 * Frontend is deployed as static assets to an S3 bucket and delivered via CloudFront.
 * The frontend does not access DynamoDB directly; all data operations occur via the API.
 * Auth tokens obtained from Cognito are stored client-side and attached to API requests (e.g., in the `Authorization` header).
+* Admin UI available at `/admin` route, visible only to users in the Cognito Admin group.
 
 ### Authentication (Cognito)
 * Cognito is used for user authentication and token issuance.
 * Authenticated users receive JWT tokens which are required to access protected API endpoints.
-* User roles (e.g., admin vs end user) are used to control access to privileged operations.
+* User roles are managed via Cognito groups (e.g., "Admin" group) with group membership reflected in JWT claims (`cognito:groups`).
 
 ### API Layer (API Gateway)
 * API Gateway is the single entry point for dynamic operations.
@@ -101,7 +102,7 @@ The Interview Question Bank is a serverless web application hosted on AWS. Stati
 
 ### Business Logic (Lambda)
 * Lambda functions handle request processing, input validation, and authorisation checks.
-* Privileged actions (create/edit/delete) require admin role validation.
+* Privileged actions (POST/PUT/DELETE to /questions) require admin group validation by checking `cognito:groups` claim.
 * Lambda uses least-privilege IAM permissions to interact with DynamoDB.
 * Errors are handled in a controlled manner to avoid leaking sensitive information while providing usable feedback.
 
@@ -138,11 +139,11 @@ The Lambda function processes the request, performs server-side validation and a
 | /answers | POST | Cognito Authoriser | Submit answers | Broken access control (submit as another user), injection, oversized payloads, replay/spam | Validate JWT, enforce user ownership (sub/claims), schema validation, size limits, rate limiting/WAF, idempotency key if needed | Log user id, request id; alarms on 4XX/5XX spikes |
 | /questions | GET | Cognito Authoriser | List questions | Unauthorised access, scraping, enumeration, excessive data exposure | RBAC/claims checks, pagination, filtering, rate limiting, return minimum fields | Monitor high request volume; 401/403 spikes |
 | /questions | OPTIONS | Cognito Authoriser | CORS pre-flight for /questions | CORS misconfig; auth-required OPTIONS breaking browsers | Allowlist origins; ensure OPTIONS does not require auth | Low value; track CORS failures |
-| /questions | POST | Cognito Authoriser | Create question | Privilege escalation (non-admin creates), injection, malicious content | Require admin/role claim, input validation & allowlists, content moderation if needed | Log creator (sub), new resource ID |
-| /questions/{id} | DELETE | Cognito Authoriser | Delete question by ID | Accidental/malicious deletion | Ownership/admin check, soft delete (recommended), least-privilege IAM, confirmation workflow if applicable | Audit log delete events; alert on unusual deletes |
+| /questions | POST | Cognito Authoriser + Admin Group | Create question (Admin only) | Privilege escalation (non-admin creates), injection, malicious content | Require "Admin" in cognito:groups claim, input validation & allowlists, size limits | Log creator (sub), new resource ID, group membership |
+| /questions/{id} | DELETE | Cognito Authoriser + Admin Group | Delete question by ID (Admin only) | Accidental/malicious deletion, privilege escalation | Admin group check, confirmation in UI, least-privilege IAM | Audit log delete events with user identity; alert on unusual deletes |
 | /questions/{id} | GET | Cognito Authoriser | Get question by ID | Enumeration (guessing IDs), data leakage | AuthZ check for visibility, use non-sequential IDs if sensitive, return minimal fields | Monitor repeated 404/403 patterns |
 | /questions/{id} | OPTIONS | None | Update question by ID | CORS misconfig; auth-required OPTIONS breaking browsers | Same restrictive CORS config | Low value; track CORS failures |
-| /questions/{id} | PUT | Cognito Authoriser | Update question by ID | Mass assignment, injection | Ownership/admin check, whitelist updatable fields, schema validation, optimistic locking/versioning if needed | Log updater (sub), changed fields metadata |
+| /questions/{id} | PUT | Cognito Authoriser + Admin Group | Update question by ID (Admin only) | Mass assignment, injection, privilege escalation | Admin group check, whitelist updatable fields (question_text, category, difficulty, reference_answer), schema validation | Log updater (sub), changed fields metadata, group membership |
 | /testing | GET | Cognito Authoriser | Test/health endpoint | Info leakage (stack traces, env/config), abuse if left open | Return minimal "OK", no internal details, restrict to admin or remove in prod | Monitor frequency; alert if hit heavily |
 | /testing | OPTIONS | None | CORS test | CORS misconfig; auth-required OPTIONS breaking browsers | Same restrictive CORS config | Low value; track CORS failures |
 
@@ -218,15 +219,18 @@ This actor highlights supply chain risk and the importance of secure DevOps prac
 | Threat ID | Priority | Threat Description | STRIDE | Affected Assets | Mitigations |
 |-----------|----------|-------------------|--------|-----------------|-------------|
 | T1 | High | An unauthenticated external user attempts to access protected API endpoints to retrieve interview questions. | Spoofing | API Endpoints, Interview Question Data | Authentication is enforced using Amazon Cognito, with API Gateway validating JWT tokens before invoking Lambda functions. |
-| T2 | High | A non-admin authenticated user attempts to create, edit, or delete interview questions. | Elevation of Privilege | API Endpoints, Interview Question Data | Role-based access control is enforced within Lambda functions to ensure only admin users can perform write operations. |
+| T2 | High | A non-admin authenticated user attempts to create, edit, or delete interview questions. | Elevation of Privilege | API Endpoints, Interview Question Data | Group-based access control enforced in Lambda: POST/PUT/DELETE operations check for "Admin" in cognito:groups JWT claim. Non-admin requests return 403 Forbidden. |
 | T3 | High | Interview question data is modified or deleted without authorisation. | Tampering | Interview Question Data, DynamoDB | DynamoDB access is restricted to Lambda functions using least-privilege IAM roles, and all write operations are authenticated and authorised. |
-| T4 | Medium | An administrator denies responsibility for modifying or deleting interview questions. | Repudiation | Audit Logs, Interview Question Data | Administrative actions are logged with user identity and timestamps using CloudWatch logging. |
+| T4 | Medium | An administrator denies responsibility for modifying or deleting interview questions. | Repudiation | Audit Logs, Interview Question Data | Administrative actions are logged with user identity (Cognito sub), group membership, and timestamps using CloudWatch logging. |
 | T5 | High | Sensitive interview questions are exposed to unauthorised users due to missing or incorrect access controls. | Information Disclosure | Interview Question Data | Access to interview questions is restricted to authenticated users, and the database is not directly accessible from the frontend. |
 | T6 | Medium | Excessive or malicious API requests degrade system availability. | Denial of Service | API Gateway, Lambda | API Gateway throttling and request limits are configured to reduce the impact of excessive requests. |
 | T7 | Medium | Malicious or malformed input causes application errors or data corruption. | Tampering | Lambda Functions, DynamoDB | Server-side input validation is performed within Lambda functions before processing or storing data. |
 | T8 | High | Compromised authentication tokens are reused to impersonate a legitimate user. | Spoofing | Access Tokens (JWTs), API Endpoints | Short-lived JWT tokens issued by Cognito are validated on every request at the API Gateway layer. |
 | T9 | Medium | Malicious or insecure code is introduced via the CI/CD pipeline. | Tampering | Source Code, CI/CD Pipeline | Code changes are deployed through an automated CI/CD pipeline with controlled access and version control. |
 | T10 | Medium | Infrastructure or configuration changes occur without traceability or detection. | Repudiation | Cloud Infrastructure, Audit Logs | AWS CloudTrail is enabled to capture account-level API activity for audit and investigation purposes. |
+| T11 | Medium | Outdated dependencies with known vulnerabilities are used in the application. | Tampering | Application Code, Dependencies | Dependabot automated security updates check dependencies weekly. Trivy vulnerability scanning runs on every CI/CD build and fails on high/critical vulnerabilities. |
+| T12 | Medium | User attempts to access Admin UI without Admin group membership. | Elevation of Privilege | Admin UI, Frontend | Admin navigation link only displayed to users with "Admin" in cognito:groups claim. Backend enforcement ensures protection even if UI is bypassed. |
+| T13 | Medium | Malicious user modifies JWT token to add Admin group claim. | Tampering, Elevation of Privilege | JWT Tokens, API Endpoints | JWT signature validation at API Gateway prevents token tampering. Tokens signed by Cognito with RS256, keys verified via JWKS endpoint. |
 
 ---
 
@@ -237,15 +241,18 @@ This actor highlights supply chain risk and the importance of secure DevOps prac
 | Threat ID | Threat Description | Affected Asset | Mitigation | Status |
 |-----------|-------------------|----------------|------------|--------|
 | T1 | Unauthenticated users attempt to access protected API endpoints | API Gateway, Interview Question Data | Authentication is enforced using Amazon Cognito, with API Gateway validating JWT tokens before invoking backend Lambda functions. | Implemented |
-| T2 | A non-admin user attempts to create, edit, or delete interview questions | API Endpoints, Interview Question Data | Role-based access control is enforced within Lambda functions to ensure only users with admin privileges can perform write operations. | Implemented |
+| T2 | A non-admin user attempts to create, edit, or delete interview questions | API Endpoints, Interview Question Data | Group-based access control enforced in Lambda: POST/PUT/DELETE to /questions require "Admin" in cognito:groups claim. Returns 403 if missing. Admin group created via CDK. | Implemented |
 | T3 | Compromised or reused authentication tokens are used to impersonate a legitimate user | Access Tokens (JWTs), API Gateway | Short-lived JWT tokens issued by Cognito are required for all API requests, and tokens are validated on every request at the API Gateway layer. | Implemented |
 | T4 | Interview question data is modified without authorisation | DynamoDB, Interview Question Data | DynamoDB access is restricted to Lambda functions only, using least-privilege IAM roles to prevent direct or unauthorised data modification. | Implemented |
 | T5 | Malicious or malformed input causes unexpected behaviour or data corruption | Lambda Functions, DynamoDB | Server-side input validation is performed within Lambda functions before processing requests or writing data to DynamoDB. | Implemented |
-| T6 | An administrator denies having modified or deleted interview questions | Application Logs, Audit Logs | Administrative actions are logged with user identity and timestamps using CloudWatch logging to support auditability and non-repudiation. | Implemented |
+| T6 | An administrator denies having modified or deleted interview questions | Application Logs, Audit Logs | Administrative actions (POST/PUT/DELETE) are logged with user identity (Cognito sub), group membership, and timestamps using CloudWatch logging. | Implemented |
 | T7 | Sensitive interview questions are exposed to unauthorised users | Interview Question Data, API Endpoints | Interview question data is only accessible via authenticated API endpoints, and the database is not directly accessible from the frontend. | Implemented |
 | T8 | Excessive or abusive API requests degrade service availability | API Gateway, Lambda | API Gateway request throttling and rate limits are configured to reduce the impact of excessive or malformed requests. | Implemented |
 | T9 | Malicious or insecure code is introduced through the deployment pipeline | Source Code, CI/CD Pipeline | Changes are deployed through an automated CI/CD pipeline, with version control and controlled access to reduce the risk of unauthorised changes. | Implemented |
 | T10 | Infrastructure or configuration changes occur without traceability | AWS Infrastructure, Cloud Resources | AWS CloudTrail is enabled to capture account-level API activity, providing an audit trail for infrastructure and configuration changes. | Implemented |
+| T11 | Outdated dependencies with known vulnerabilities | Application Dependencies | Dependabot monitors dependencies weekly and creates PRs for security updates. Trivy scans on every build fail on high/critical vulnerabilities. | Implemented |
+| T12 | Unauthorised access to Admin UI | Admin Dashboard, Frontend | Admin navigation link conditionally rendered based on cognito:groups claim. Backend authorization prevents API access even if UI is bypassed. | Implemented |
+| T13 | Tampering with JWT tokens to gain admin access | JWT Tokens, API Gateway | JWT tokens are RS256-signed by Cognito and verified by API Gateway using JWKS keys. Token tampering invalidates signature and results in 401. | Implemented |
 
 ---
 
@@ -256,15 +263,20 @@ The following security tests were performed to validate that the mitigations ide
 | Test Number | Mitigations Tested | Test Case | Expected Outcome | Test Type | Status |
 |-------------|-------------------|-----------|------------------|-----------|--------|
 | ST1 | Cognito authentication enforced at API Gateway | Attempt to access protected API endpoints without a valid JWT token | Request is denied with an unauthorised response | Manual | Passed |
-| ST2 | Role-based access control (RBAC) for admin operations | Authenticate as a non-admin user and attempt to create a new interview question | Request is rejected and no data is written to DynamoDB | Manual | Passed |
-| ST3 | RBAC for privileged delete operations | Authenticate as a non-admin user and attempt to delete an interview question | Request is denied and question remains unchanged | Manual | Passed |
-| ST4 | Admin authorisation for write operations | Authenticate as an admin user and create a new interview question | Question is successfully created and persisted | Manual | Passed |
+| ST2 | Group-based access control for admin POST operations | Authenticate as a non-admin user (no Admin group) and attempt to POST /questions | Request returns 403 Forbidden and no data is written | Unit Test (test_admin_authorization.py) | Passed |
+| ST3 | Group-based access control for admin DELETE operations | Authenticate as a non-admin user and attempt to DELETE /questions/{id} | Request returns 403 Forbidden and question remains unchanged | Unit Test (test_admin_authorization.py) | Passed |
+| ST4 | Admin authorization for write operations | Authenticate as admin user (Admin group) and POST to /questions | Question is successfully created with 201 response | Unit Test (test_admin_authorization.py) | Passed |
 | ST5 | Server-side input validation | Submit malformed or unexpected input to question creation endpoint | Input is rejected and no invalid data is stored | Manual | Passed |
 | ST6 | Least-privilege IAM permissions | Attempt direct access to DynamoDB from outside Lambda execution context | Access is denied due to IAM restrictions | Manual/Review | Passed |
-| ST7 | Audit logging of administrative actions | Perform admin edit or delete operation and review logs | CloudWatch logs record action with user identity and timestamp | Manual | Passed |
+| ST7 | Audit logging of administrative actions | Perform admin POST/PUT/DELETE operation and review logs | CloudWatch logs record action with user identity (sub), group membership, and timestamp | Manual | Passed |
 | ST8 | Infrastructure audit logging | Modify infrastructure configuration and review CloudTrail logs | CloudTrail records AWS API activity | Manual/Review | Passed |
 | ST9 | CI/CD deployment controls | Deploy a change via the CI/CD pipeline | Change is deployed successfully through automated pipeline | Automated | Passed |
 | ST10 | Service availability post-deployment | Access the application after deployment | Application remains available and functional | Manual | Passed |
+| ST11 | Admin UI visibility control | Log in as non-admin user and check navigation | Admin link not visible in navigation | Manual | Passed |
+| ST12 | Admin UI access restriction | Log in as admin user (Admin group member) and access /admin | Admin dashboard displays with create/edit/delete functionality | Manual | Passed |
+| ST13 | Trivy vulnerability scanning | Push code with known vulnerable dependency | CI/CD build fails if high/critical vulnerabilities detected | Automated (CI/CD) | Passed |
+| ST14 | Dependabot security updates | Review Dependabot configuration | Weekly dependency checks enabled for npm (frontend) and pip (backend) | Manual/Review | Passed |
+| ST15 | Admin group authorization on all write endpoints | Test POST/PUT/DELETE to /questions without Admin group | All requests return 403 Forbidden | Unit Test (test_admin_authorization.py) | Passed |
 
 ---
 
@@ -292,5 +304,5 @@ The following security tests were performed to validate that the mitigations ide
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: February 2026
+**Document Version**: 1.1
+**Last Updated**: February 22, 2026

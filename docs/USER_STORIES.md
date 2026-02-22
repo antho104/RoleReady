@@ -118,17 +118,29 @@
 ## Admin Users
 ### _"As an admin..."_
 
-**Note:** Admin functionality is currently implemented at the API level only. No admin UI exists yet.
-
 #### Story 1: Manage Question Bank
 **I want to** manage interview questions with proper authorization **so that** the question bank remains high-quality and only authorized users can make changes.
 
 **Acceptance Criteria:**
 - Admin users assigned to Cognito "Admin" group
-- Non-admin users receive 403 Forbidden for admin operations
-- Questions can be added/edited via API (no UI yet)
+- Admin Dashboard UI accessible at `/admin` route (visible only to Admin group members)
+- Create new questions with form validation (question_text, category, difficulty required; reference_answer optional)
+- Edit existing questions in modal with pre-filled data
+- Delete questions with confirmation
+- Search and filter questions (same as regular question bank)
+- Category is free-text input (users can type any category)
+- Difficulty is dropdown (Easy, Medium, Hard)
+- Non-admin users receive 403 Forbidden for POST/PUT/DELETE operations
+- GET operations available to all authenticated users
 - Admin actions logged to CloudWatch with user identity and timestamp
 - Role checks enforced in Lambda before DynamoDB writes
+- Admin nav link only visible to users in Admin Cognito group
+- Backend endpoints:
+  - POST /questions - Create question (admin only)
+  - PUT /questions/{id} - Update question (admin only)
+  - DELETE /questions/{id} - Delete question (admin only)
+  - GET /questions - List questions (all users)
+  - GET /questions/{id} - Get single question (all users)
 
 ---
 
@@ -212,7 +224,7 @@
 3. **Admin User:** Manages interview questions, ensuring content is accurate and up-to-date.
 4. **Platform Administrator:** Manages infrastructure, deployments, monitoring, and security.
 
-**Document Version:** 2.1
-**Last Updated:** February 20, 2026
+**Document Version:** 2.2
+**Last Updated:** February 22, 2026
 **Updated By:** Antho103
 
