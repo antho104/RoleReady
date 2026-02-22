@@ -114,6 +114,21 @@ graph TD
 
 ---
 
+## Automated Maintenance
+
+### Dependabot
+
+Automated dependency management runs weekly to keep the project secure:
+
+- **Weekly Scans**: Checks Python (pip), npm, and GitHub Actions for updates
+- **Security Patches**: Automatically creates PRs for vulnerability fixes
+- **Version Updates**: Proposes updates for outdated dependencies
+- **Review Process**: All updates go through PR review before merging
+
+Configuration: [`.github/dependabot.yml`](../.github/dependabot.yml)
+
+---
+
 ## Pipeline Triggers
 
 | Files Changed | Pipeline Triggered |
@@ -134,4 +149,4 @@ graph TD
 
 ---
 
-*Last Updated: 2026-02-19*
+*Last Updated: 2026-02-22*
