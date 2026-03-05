@@ -9,9 +9,5 @@
   "scripts": {
     "start": "node index.js",
     "test": "echo \"no test yet\""
-  },
-  "overrides": {
-    "minimatch": "^10.2.1",
-    "fast-xml-parser": "^5.3.6"
   }
 }
