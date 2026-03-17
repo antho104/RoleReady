@@ -39,7 +39,7 @@ function NavBar() {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-brand">
-          Interview Question Bank
+          Role Ready
         </Link>
         <div className="navbar-links">
           <Link to="/questions" className="nav-link">
@@ -86,10 +86,6 @@ function AppContent() {
             <Route path="/admin" element={<Admin />} />
           </Routes>
         </main>
-
-        <footer className="footer">
-          <p>&copy; 2024 Interview Question Bank. Built with React + TypeScript + Vite</p>
-        </footer>
       </div>
     </BrowserRouter>
   );
